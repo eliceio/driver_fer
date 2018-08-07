@@ -1,12 +1,12 @@
 # driver_fer
 
-1. Git Branch Guide
+# 1. Git Branch Guide
 origin/master
 origin/develop
 
 * master에다가 바로 커밋하지 말 것!
 
-2. Git Commit Message Style Guide
+# 2. Git Commit Message Style Guide
 
 Structure
 커밋 메시지는 다음의 형태로 작성해주세요.
