@@ -32,7 +32,7 @@ def showScreenAndDetectFace(model, capture):
         face_coordinates = du.getFaceCoordinates(frame)
         refreshScreen(frame, face_coordinates)
         # 얼굴을 detection 한 경우.
-        if face_coordinates is not None:
+        if face_coordinates is not None frame is not None:
             face = du.preprocess(frame, face_coordinates, FACE_SHAPE)
             input_img = np.expand_dims(face, axis=0)
             input_img = np.expand_dims(input_img, axis=-1)
