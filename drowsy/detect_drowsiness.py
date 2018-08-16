@@ -39,6 +39,72 @@ def eye_aspect_ratio(eye):
     return ear
 
 
+##눈 크기를 측정하기 위해 처음 시작을 알리는 webcam 출력값
+def start(cv2, repeat):
+    if repeat >= 1 and repeat <= 10:
+        cv2.putText(frame, "Look at the camera for five seconds.", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
+                    (255, 0, 0), 2)
+    elif repeat >= 11 and repeat <= 20:
+        cv2.putText(frame, "3", (150, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
+                    (255, 0, 0), 2)
+    elif repeat >= 21 and repeat <= 30:
+        cv2.putText(frame, "2", (150, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
+                    (255, 0, 0), 2)
+    elif repeat >= 31 and repeat <= 40:
+        cv2.putText(frame, "1", (150, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
+                    (255, 0, 0), 2)
+
+
+def warning(ALARM_ON):
+    # if the alarm is not on, turn it on
+    if not ALARM_ON:
+        ALARM_ON = True
+
+        if args["alarm"] != "":
+            t = Thread(target=sound_alarm,
+                       args=(args["alarm"],))
+            t.deamon = True
+            t.start()
+
+    # draw an alarm on the frame
+    cv2.putText(frame, "Drowsy Warning!", (10, 30),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+
+    return ALARM_ON
+
+##5초동안 사용자 눈 크기 계산
+def eye_size_cal(repeat, user_eye, ear, Sleeping_eye):
+    user_eye += ear
+    print("ear:" + str(ear))
+    print("user : " + str(user_eye))
+    cv2.putText(frame, "eye size: {:.2f}".format(user_eye / (repeat - 40)), (280, 30),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+    if repeat == 45:
+        print("사용자 눈 크기 " + str(user_eye / 5))
+        user_eye = (user_eye / 5)
+        Sleeping_eye = (user_eye * 0.75)
+        print("자는 눈 계산" + str(Sleeping_eye))
+    return user_eye, Sleeping_eye
+
+
+def current_eye_size():
+    shape = predictor(gray, rect)
+    shape = face_utils.shape_to_np(shape)
+
+    leftEye = shape[lStart:lEnd]
+    rightEye = shape[rStart:rEnd]
+    leftEAR = eye_aspect_ratio(leftEye)
+    rightEAR = eye_aspect_ratio(rightEye)
+
+    ear = (leftEAR + rightEAR) / 2.0
+
+    leftEyeHull = cv2.convexHull(leftEye)
+    rightEyeHull = cv2.convexHull(rightEye)
+    cv2.drawContours(frame, [leftEyeHull], -1, (0, 255, 0), 1)
+    cv2.drawContours(frame, [rightEyeHull], -1, (0, 255, 0), 1)
+
+    return ear
+
 # 인자값, default로 설정 완료
 ap = argparse.ArgumentParser()
 ap.add_argument("-p", "--shape-predictor", default="shape_predictor_68_face_landmarks.dat",
@@ -49,15 +115,10 @@ ap.add_argument("-w", "--webcam", type=int, default=0,
                 help="index of webcam on system")
 args = vars(ap.parse_args())
 
-##눈의 감긴 정도 구별 변수
-# EYE_AR_THRESH = 0.22
-
 ##연속적으로 눈을 감은 횟수
 EYE_AR_CONSEC_FRAMES = 40
 consecutive_eyes_closed = 1
 
-##프레임 반복 횟수(while문 반복 횟수)
-# frame_number=0
 ## 평균 눈 깜빡임 횟수
 Blink_avg_number = 0
 
@@ -121,75 +182,26 @@ while True:
     # detect faces in the grayscale frame
     rects = detector(gray, 0)
 
-
-
     ##눈 인식이 20초 이상 되지 않을 경우 알림 울리기
     if not rects:
         Eye_Notrecognition_time += 1
     if Eye_Notrecognition_time >= 20:
-        if not ALARM_ON:
-            ALARM_ON = True
-            # check to see if an alarm file was supplied,
-            # and if so, start a thread to have the alarm
-            # sound played in the background
-            if args["alarm"] != "":
-                t = Thread(target=sound_alarm,
-                           args=(args["alarm"],))
-                t.deamon = True
-                t.start()
-        cv2.putText(frame, "Drowsy Warning!", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        ALARM_ON = warning(ALARM_ON)
+    if repeat <= 40:
+        start(cv2, repeat)
 
-    if repeat >= 1 and repeat <= 10:
-        cv2.putText(frame, "Look at the camera for five seconds.", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
-                    (255, 0, 0), 2)
-    elif repeat >= 11 and repeat <= 20:
-        cv2.putText(frame, "3", (150, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
-                    (255, 0, 0), 2)
-    elif repeat >= 21 and repeat <= 30:
-        cv2.putText(frame, "2", (150, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
-                    (255, 0, 0), 2)
-    elif repeat >= 31 and repeat <= 40:
-        cv2.putText(frame, "1", (150, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
-                    (255, 0, 0), 2)
+
     # loop over the face detections
     for rect in rects:
         Eye_Notrecognition_time = 0
-        # determine the facial landmarks for the face region, then
-        # convert the facial landmark (x, y)-coordinates to a NumPy
-        # array
-        shape = predictor(gray, rect)
-        shape = face_utils.shape_to_np(shape)
-
-        # extract the left and right eye coordinates, then use the
-        # coordinates to compute the eye aspect ratio for both eyes
-        leftEye = shape[lStart:lEnd]
-        rightEye = shape[rStart:rEnd]
-        leftEAR = eye_aspect_ratio(leftEye)
-        rightEAR = eye_aspect_ratio(rightEye)
-
-        # average the eye aspect ratio together for both eyes
-        ear = (leftEAR + rightEAR) / 2.0
-
-        # compute the convex hull for the left and right eye, then
-        # visualize each of the eyes
-        leftEyeHull = cv2.convexHull(leftEye)
-        rightEyeHull = cv2.convexHull(rightEye)
-        cv2.drawContours(frame, [leftEyeHull], -1, (0, 255, 0), 1)
-        cv2.drawContours(frame, [rightEyeHull], -1, (0, 255, 0), 1)
+        ear = current_eye_size()
 
 
-        #사용자의 눈 크기 구하기
+
+        #사용자의 평균 눈 크기 구하기
         if repeat >= 41 and repeat <=45:
-            user_eye += ear
-            print("ear:"+str(ear))
-            print("user : "+str(user_eye))
-            cv2.putText(frame, "eye size: {:.2f}".format(user_eye/(repeat-40)), (280, 30),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
-            if repeat == 45:
-                print("사용자 눈 크기 "+str(user_eye/5))
-                user_eye = (user_eye/5)
-                Sleeping_eye = (user_eye*0.75)
-                print("자는 눈 계산"+str(Sleeping_eye))
+            user_eye, Sleeping_eye = eye_size_cal(repeat, user_eye, ear,Sleeping_eye)
+
 
         elif repeat >= 46 and repeat<=55:
             cv2.putText(frame, "Start!", (150, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7,(255, 0, 0), 2)
@@ -207,22 +219,8 @@ while True:
                 # if the eyes were closed for a sufficient number of
                 # then sound the alarm
                 if COUNTER >= EYE_AR_CONSEC_FRAMES:
-                    # if the alarm is not on, turn it on
-                    if not ALARM_ON:
-                        ALARM_ON = True
+                    ALARM_ON = warning(ALARM_ON)
 
-                        # check to see if an alarm file was supplied,
-                        # and if so, start a thread to have the alarm
-                        # sound played in the background
-                        if args["alarm"] != "":
-                            t = Thread(target=sound_alarm,
-                                       args=(args["alarm"],))
-                            t.deamon = True
-                            t.start()
-
-                    # draw an alarm on the frame
-                    cv2.putText(frame, "Drowsy Warning!", (10, 30),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
             # otherwise, the eye aspect ratio is not below the blink
             # threshold, so reset the counter and alarm
             else:
@@ -234,18 +232,9 @@ while True:
                     else:
                         count_drowsy_detection = 0
                     if count_drowsy_detection >= consecutive_drowsy:
-                        print("*****************" + str(count_drowsy_detection))
-                        if not ALARM_ON and not Slow_blinking:
-                            ALARM_ON = True
+                        if not Slow_blinking:
+                            ALARM_ON = warning(ALARM_ON)
                             Slow_blinking = True
-
-                            if args["alarm"] != "":
-                                t = Thread(target=sound_alarm,
-                                           args=(args["alarm"],))
-                                t.deamon = True
-                                t.start()
-                        cv2.putText(frame, "Drowsy Warning!", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
-                                        (0, 0, 255), 2)
 
                     if Slow_blinking:
                         print("slow_blink")
@@ -259,7 +248,6 @@ while True:
                 ALARM_ON = False
 
 
-
             # draw the computed eye aspect ratio on the frame to help
             cv2.putText(frame, "EAR: {:.2f}".format(ear), (300, 30),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
@@ -270,10 +258,8 @@ while True:
 
     # show the frame
     cv2.imshow("Frame", frame)
-    key = cv2.waitKey(1) & 0xFF
 
-    # if the `q` key was pressed, break from the loop
-    if key & 0xFF == ord("q"):
+    if cv2.waitKey(20) & 0xFF == ord('q'):
         break
 
 # do a bit of cleanup
