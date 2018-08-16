@@ -72,6 +72,7 @@ def warning(ALARM_ON):
 
     return ALARM_ON
 
+
 ##5초동안 사용자 눈 크기 계산
 def eye_size_cal(repeat, user_eye, ear, Sleeping_eye):
     user_eye += ear
@@ -87,6 +88,7 @@ def eye_size_cal(repeat, user_eye, ear, Sleeping_eye):
     return user_eye, Sleeping_eye
 
 
+#현재 눈 크기 계산
 def current_eye_size():
     shape = predictor(gray, rect)
     shape = face_utils.shape_to_np(shape)
