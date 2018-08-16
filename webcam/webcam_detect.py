@@ -45,7 +45,7 @@ def showScreenAndDetectFace(model, capture):
     while True:
         ret, frame = capture.read()
         face_coordinates = du.getFaceCoordinates(frame)
-        refreshScreen(frame, face_coordinates)
+
         # 얼굴을 detection 한 경우.
         if len(face_coordinates) is not 0 and isContinue:
             face = du.preprocess(frame, face_coordinates, FACE_SHAPE)
@@ -54,7 +54,9 @@ def showScreenAndDetectFace(model, capture):
             result = model.predict(input_img)[0]
             index = np.argmax(result)
             print("Emotion : ", emotion[index])
+            cv2.putText(frame, emotion[index], (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
+        refreshScreen(frame, face_coordinates)
         key = cv2.waitKey(20)
         if key == ord('s'):
             isContinue = not isContinue
@@ -88,6 +90,7 @@ def main():
     capture = getCameraStreaming()
     setDefaultCameraSetting()
     showScreenAndDetectFace(model, capture)
+
 
 
 if __name__ == '__main__':
