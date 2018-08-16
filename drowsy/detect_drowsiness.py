@@ -83,11 +83,12 @@ user_eye = 0
 repeat = 0
 Sleeping_eye=0
 
+##졸음이 깰때까지 webcam에 문구를 띄우기 위해 추가 된 변수
+Slow_blinking=False
+
 COUNTER = 0
 ALARM_ON = False
 
-# initialize dlib's face detector (HOG-based) and then create
-# the facial landmark predictor
 print("[INFO] loading facial landmark predictor...")
 detector = dlib.get_frontal_face_detector()
 
@@ -231,21 +232,24 @@ while True:
                     if (end_time - start_time) >= float(0.4):
                         count_drowsy_detection += 1
                     else:
-                        print("*****************"+str(count_drowsy_detection))
-                        if count_drowsy_detection >= consecutive_drowsy:
-                            if not ALARM_ON:
-                                ALARM_ON = True
-                                # check to see if an alarm file was supplied,
-                                # and if so, start a thread to have the alarm
-                                # sound played in the background
-                                if args["alarm"] != "":
-                                    t = Thread(target=sound_alarm,
-                                               args=(args["alarm"],))
-                                    t.deamon = True
-                                    t.start()
-                            cv2.putText(frame, "Drowsy Warning!", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
-                                        (0, 0, 255), 2)
                         count_drowsy_detection = 0
+                    if count_drowsy_detection >= consecutive_drowsy:
+                        print("*****************" + str(count_drowsy_detection))
+                        if not ALARM_ON and not Slow_blinking:
+                            ALARM_ON = True
+                            Slow_blinking = True
+
+                            if args["alarm"] != "":
+                                t = Thread(target=sound_alarm,
+                                           args=(args["alarm"],))
+                                t.deamon = True
+                                t.start()
+                        cv2.putText(frame, "Drowsy Warning!", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
+                                        (0, 0, 255), 2)
+
+                    if Slow_blinking:
+                        print("slow_blink")
+                        Slow_blinking = False
 
                     # print(end_time-start_time)
                     eye_open = True
