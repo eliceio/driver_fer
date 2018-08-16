@@ -115,15 +115,17 @@ while True:
     frame = imutils.resize(frame, width=450)
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
+    cv2.rectangle(frame, (130, 80), (330, 280), (255, 0, 0), 3)
+
     # detect faces in the grayscale frame
     rects = detector(gray, 0)
 
 
 
-    ##눈 인식이 5초 이상 되지 않을 경우 알림 울리기
+    ##눈 인식이 20초 이상 되지 않을 경우 알림 울리기
     if not rects:
         Eye_Notrecognition_time += 1
-    if Eye_Notrecognition_time >= 10:
+    if Eye_Notrecognition_time >= 20:
         if not ALARM_ON:
             ALARM_ON = True
             # check to see if an alarm file was supplied,
@@ -134,7 +136,7 @@ while True:
                            args=(args["alarm"],))
                 t.deamon = True
                 t.start()
-        cv2.putText(frame, "DROWSINESS ALERT!", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        cv2.putText(frame, "Drowsy Warning!", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
     if repeat >= 1 and repeat <= 10:
         cv2.putText(frame, "Look at the camera for five seconds.", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
@@ -218,7 +220,7 @@ while True:
                             t.start()
 
                     # draw an alarm on the frame
-                    cv2.putText(frame, "DROWSINESS ALERT!", (10, 30),
+                    cv2.putText(frame, "Drowsy Warning!", (10, 30),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
             # otherwise, the eye aspect ratio is not below the blink
             # threshold, so reset the counter and alarm
@@ -241,7 +243,7 @@ while True:
                                                args=(args["alarm"],))
                                     t.deamon = True
                                     t.start()
-                            cv2.putText(frame, "DROWSINESS ALERT!", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
+                            cv2.putText(frame, "Drowsy Warning!", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
                                         (0, 0, 255), 2)
                         count_drowsy_detection = 0
 
