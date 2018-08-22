@@ -1,4 +1,12 @@
 import cv2
+import dlib
+from imutils import face_utils
+
+# dlib을 위한 변수
+landmarks = 'shape_predictor_68_face_landmarks.dat'
+print("[INFO] loading facial landmark predictor...")
+detector = dlib.get_frontal_face_detector()
+predictor = dlib.shape_predictor(landmarks)
 
 FACE_CASCADE_PATH = "haarcascade_frontalface_default.xml"
 RED_COLOR = (0, 0, 255)
@@ -29,16 +37,33 @@ def getFaceCoordinates(img):
     return coordinates
 
 
+def dlib_face_coordinates(img):
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    return detector(gray, 0)
+
+
 def drawFace(frame, face_coordinates):
-    for (x, y, w, h) in face_coordinates:
-        cv2.rectangle(frame, (x, y), (x + w, y + h), RED_COLOR, thickness=2)
+    # case : dlib
+    if len(face_coordinates) > 0:
+        for face in face_coordinates:
+            (x, y, w, h) = face_utils.rect_to_bb(face)
+            cv2.rectangle(frame, (x, y), (x + w, y + h), RED_COLOR, thickness=1)
+    # case : haar cascade
+    # for (x, y, w, h) in face_coordinates:
+    #     cv2.rectangle(frame, (x, y), (x + w, y + h), RED_COLOR, thickness=2)
 
 
 def crop_face(frame, face_coordinates):
+    # case : dlib
     cropped_img = frame
-    for (x, y, w, h) in face_coordinates:
-        cropped_img = frame[y - int(h / 4):y + h + int(h / 4), x - int(w / 4):x + w + int(w / 4)]
+    (x, y, w, h) = face_utils.rect_to_bb(face_coordinates[0])
+    cropped_img = frame[y - int(h / 4):y + h + int(h / 4), x - int(w / 4):x + w + int(w / 4)]
     # cv2.imwrite('./0.png', cropped_img, params=[cv2.IMWRITE_PNG_COMPRESSION, 0])
+
+    # case : haar cascade
+    # cropped_img = frame
+    # for (x, y, w, h) in face_coordinates:
+    #     cropped_img = frame[y - int(h / 4):y + h + int(h / 4), x - int(w / 4):x + w + int(w / 4)]
     return cropped_img
 
 

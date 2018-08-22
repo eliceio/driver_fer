@@ -28,11 +28,11 @@ camera_height = 0
 
 
 def getCameraStreaming():
-    global camera_width, camera_height
     capture = cv2.VideoCapture(0)
-    camera_width = capture.get(3)
-    camera_height = capture.get(4)
-    print(camera_width, camera_height)
+    # case : haar cascade
+    # global camera_width, camera_height
+    # camera_width = capture.get(3)
+    # camera_height = capture.get(4)
     if not capture:
         print("Failed to capture video streaming")
         sys.exit()
@@ -50,10 +50,14 @@ def showScreenAndDetectFace(model, capture):
     global isContinue, camera_width, camera_height
     while True:
         ret, frame = capture.read()
-        face_coordinates = du.getFaceCoordinates(frame)
+        # case : dlib
+        face_coordinates = du.dlib_face_coordinates(frame)
+        # case : haar cascade
+        # face_coordinates = du.getFaceCoordinates(frame)
 
         # 얼굴을 detection 한 경우.
-        if len(face_coordinates) is not 0 and du.checkFaceCoordinate(face_coordinates, camera_width, camera_height) and isContinue:
+        # case : dlib / if 조건만 다름.
+        if len(face_coordinates) > 0 and isContinue:
             face = du.preprocess(frame, face_coordinates, FACE_SHAPE)
             input_img = np.expand_dims(face, axis=0)
             input_img = np.expand_dims(input_img, axis=-1)
@@ -61,6 +65,8 @@ def showScreenAndDetectFace(model, capture):
             index = np.argmax(result)
             print("Emotion : ", emotion[index])
             cv2.putText(frame, emotion[index], (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        # case : haar cascade / if 문 내용 위와 동일.
+        # if len(face_coordinates) is not 0 and du.checkFaceCoordinate(face_coordinates, camera_width, camera_height) and isContinue:
 
         refreshScreen(frame, face_coordinates)
         key = cv2.waitKey(20)
@@ -71,9 +77,11 @@ def showScreenAndDetectFace(model, capture):
 
 
 def refreshScreen(frame, face_coordinates):
-    global camera_width, camera_height
-    if du.checkFaceCoordinate(face_coordinates, camera_width, camera_height):
-        du.drawFace(frame, face_coordinates)
+    du.drawFace(frame, face_coordinates)
+    # case : haar cascade
+    # global camera_width, camera_height
+    # if du.checkFaceCoordinate(face_coordinates, camera_width, camera_height):
+    #     du.drawFace(frame, face_coordinates)
     cv2.imshow(windowName, frame)
 
 
