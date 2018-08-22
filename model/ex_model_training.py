@@ -58,8 +58,10 @@ def load_data():
     x_test = np.array([list(map(int, x.split())) for x in fer_test['pixels'].values])
     y_test = np.array(fer_test['emotion'].values)
 
+    # normalize for x
     x_train = normalize_x(x_train)
     x_test = normalize_x(x_test)
+    
     y_train = np_utils.to_categorical(y_train, n_class)  # to convert one-hot encoding
     y_test = np_utils.to_categorical(y_test, n_class)
 
@@ -190,48 +192,49 @@ def preprocess(img_path):
     return img_arr, img_tensor
 #
 #
-#def grad_cam(model, img_path, class_idx, layer_idx):
-#
-#    img_arr, img_tensor = preprocess(img_path)
-#
-#    y_c = model.layers[-1].output.op.inputs[0][0, class_idx]  # final layer (before softmax)
-#    layer_output = model.layers[layer_idx].output  # pick specific layer output (caution: conv layer only)
-#    
-#    grad = K.gradients(y_c, layer_output)[0]  # calculate gradient of y_c w.r.t. A_k from the conv layer output
-#    gradient_fn = K.function([model.input], [layer_output, grad, model.layers[-1].output])
-#    
-#    conv_output, grad_val, predictions = gradient_fn([img_tensor])
-#    conv_output, grad_val = conv_output[0], grad_val[0]
-#    
-#    weights = np.mean(grad_val, axis=(0, 1))
-#    cam = np.dot(conv_output, weights)
-#    cam = cv2.resize(cam, (img_size, img_size))
-#    
-#    # relu 
-#    cam = np.maximum(cam, 0)    
-#    cam = cam / cam.max()
-#    
-#    return img_arr, cam, predictions
-#    
-#        
-#def plot_grad_cam(model, img, layer_idx = -5):
-#        
-#    img = np.expand_dims(img, 0)
-#    pred_class = np.argmax(model.predict(img))
-#    plt.figure(2)
-#    fig, axes = plt.subplots(1, 2, figsize=(30, 24))
-#    img, cam, predictions = grad_cam(model.model, img, pred_class, layer_idx) #in case of model class, model.model
-#        
-#    pred_values = np.squeeze(predictions, 0)
-#    top1 = np.argmax(pred_values)
-#    top1_value = np.round(float(pred_values[top1]*100), decimals = 4)
-#    top4 = np.argpartition(pred_values, -4)[-4:]  #top 4
-#    
-#    axes[0, 0].set_title("Pred:{}{}%\n True:{}\n{}".format(class_label[top1], top1_value, class_label[pred_class], top4 ), fontsize=10)
-#    axes[0, 0].imshow(img,cmap = 'gray')
-#    axes[0, 1].imshow(img,cmap = 'gray')
-#    axes[0, 1].imshow(cam, cmap = 'jet', alpha = 0.5)
-#    
+def grad_cam(model, img_path, class_idx, layer_idx):
+
+    img_arr, img_tensor = preprocess(img_path)
+
+    y_c = model.layers[-1].output.op.inputs[0][0, class_idx]  # final layer (before softmax)
+    layer_output = model.layers[layer_idx].output  # pick specific layer output (caution: conv layer only)
+    
+    grad = K.gradients(y_c, layer_output)[0]  # calculate gradient of y_c w.r.t. A_k from the conv layer output
+    gradient_fn = K.function([model.input], [layer_output, grad, model.layers[-1].output])
+    
+    conv_output, grad_val, predictions = gradient_fn([img_tensor])
+    conv_output, grad_val = conv_output[0], grad_val[0]
+    
+    weights = np.mean(grad_val, axis=(0, 1))
+    cam = np.dot(conv_output, weights)
+    cam = cv2.resize(cam, (img_size, img_size))
+    
+    # relu 
+    cam = np.maximum(cam, 0)    
+    cam = cam / cam.max()
+    
+    return img_arr, cam, predictions
+    
+        
+def plot_grad_cam(model, img, layer_idx = -5):
+        
+    img = np.expand_dims(img, 0)
+    #pred_class = np.argmax(model.predict(img))
+    pred_class = 1
+    plt.figure(2)
+    fig, axes = plt.subplots(1, 2, figsize=(30, 24))
+    img, cam, predictions = grad_cam(model.model, img, pred_class, layer_idx) #in case of model class, model.model
+        
+    pred_values = np.squeeze(predictions, 0)
+    top1 = np.argmax(pred_values)
+    top1_value = np.round(float(pred_values[top1]*100), decimals = 4)
+    top4 = np.argpartition(pred_values, -4)[-4:]  #top 4
+    
+    axes[0, 0].set_title("Pred:{}{}%\n True:{}\n{}".format(class_label[top1], top1_value, class_label[pred_class], top4 ), fontsize=10)
+    axes[0, 0].imshow(img,cmap = 'gray')
+    axes[0, 1].imshow(img,cmap = 'gray')
+    axes[0, 1].imshow(cam, cmap = 'jet', alpha = 0.5)
+    
 #    
 class BaseNet:
     def __init__(self, weights_file=None):
@@ -298,10 +301,7 @@ if __name__ == "__main__":
     
     print("loading datasets")
     x_train, x_test, y_train, y_test = load_data()
-    print("normalize_x for x_train")
-    x_train = normalize_x(x_train)
-    print("normalize_x for x_test")
-    x_test = normalize_x(x_test)
+
     
     epoch = 2  # epoch means entire data set. if we set 100 as an epoch, entire data set will be trained (by batch) 100 times.
     # due to the slow speed, default setting is 2. you can increase if you have GPU.
