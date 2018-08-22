@@ -23,10 +23,16 @@ resnet_weight_path = 'resnet_weight.h5'
 
 emotion = ['Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral']
 isContinue = True
+camera_width = 0
+camera_height = 0
 
 
 def getCameraStreaming():
+    global camera_width, camera_height
     capture = cv2.VideoCapture(0)
+    camera_width = capture.get(3)
+    camera_height = capture.get(4)
+    print(camera_width, camera_height)
     if not capture:
         print("Failed to capture video streaming")
         sys.exit()
@@ -41,13 +47,13 @@ def setDefaultCameraSetting():
 
 
 def showScreenAndDetectFace(model, capture):
-    global isContinue
+    global isContinue, camera_width, camera_height
     while True:
         ret, frame = capture.read()
         face_coordinates = du.getFaceCoordinates(frame)
 
         # 얼굴을 detection 한 경우.
-        if len(face_coordinates) is not 0 and isContinue:
+        if len(face_coordinates) is not 0 and du.checkFaceCoordinate(face_coordinates, camera_width, camera_height) and isContinue:
             face = du.preprocess(frame, face_coordinates, FACE_SHAPE)
             input_img = np.expand_dims(face, axis=0)
             input_img = np.expand_dims(input_img, axis=-1)
@@ -65,7 +71,8 @@ def showScreenAndDetectFace(model, capture):
 
 
 def refreshScreen(frame, face_coordinates):
-    if face_coordinates is not None:
+    global camera_width, camera_height
+    if du.checkFaceCoordinate(face_coordinates, camera_width, camera_height):
         du.drawFace(frame, face_coordinates)
     cv2.imshow(windowName, frame)
 
@@ -90,7 +97,6 @@ def main():
     capture = getCameraStreaming()
     setDefaultCameraSetting()
     showScreenAndDetectFace(model, capture)
-
 
 
 if __name__ == '__main__':
