@@ -23,8 +23,8 @@ def getFaceCoordinates(img):
     # w, h는 가로, 세로 크기입니다.
     coordinates = cascade.detectMultiScale(
         image=src_img,
-        scaleFactor=1.1,
-        minNeighbors=3,
+        scaleFactor=1.3,
+        minNeighbors=4,
         minSize=(48, 48))
     return coordinates
 
@@ -46,4 +46,17 @@ def preprocess(img, face_coordinates, face_shape=(48, 48)):
     face = crop_face(img, face_coordinates)
     face_resize = cv2.resize(face, face_shape)
     face_gray = cv2.cvtColor(face_resize, cv2.COLOR_BGR2GRAY)
+    cv2.imwrite('./123.png', face_gray, params=[cv2.IMWRITE_PNG_COMPRESSION, 0])
     return face_gray
+
+
+def checkFaceCoordinate(face_coordinates, width, height):
+    for (x, y, w, h) in face_coordinates:
+        x1 = int(width * 0.25)
+        x2 = int(width * 0.5)
+        y1 = int(height * 0.25)
+        y2 = int(height * 0.5)
+        if x in range(x1, x2) and y in range(y1, y2):
+            return True
+        else:
+            return False
