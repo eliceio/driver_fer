@@ -23,16 +23,17 @@ resnet_weight_path = 'resnet_weight.h5'
 
 emotion = ['Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral']
 isContinue = True
+isArea = False
 camera_width = 0
 camera_height = 0
 
 
 def getCameraStreaming():
     capture = cv2.VideoCapture(0)
-    # case : haar cascade
-    # global camera_width, camera_height
-    # camera_width = capture.get(3)
-    # camera_height = capture.get(4)
+    global camera_width, camera_height
+    camera_width = capture.get(3)
+    camera_height = capture.get(4)
+    du.set_default_min_max_area(camera_width, camera_height)
     if not capture:
         print("Failed to capture video streaming")
         sys.exit()
@@ -47,18 +48,19 @@ def setDefaultCameraSetting():
 
 
 def showScreenAndDetectFace(model, capture):
-    global isContinue, camera_width, camera_height
+    global isContinue, isArea
     while True:
         ret, frame = capture.read()
         # case : dlib
         face_coordinates = du.dlib_face_coordinates(frame)
+        bounding_box = du.checkFaceCoordinate(face_coordinates)
         # case : haar cascade
         # face_coordinates = du.getFaceCoordinates(frame)
 
         # 얼굴을 detection 한 경우.
         # case : dlib / if 조건만 다름.
-        if len(face_coordinates) > 0 and isContinue:
-            face = du.preprocess(frame, face_coordinates, FACE_SHAPE)
+        if len(bounding_box) > 0 and isContinue:
+            face = du.preprocess(frame, bounding_box, FACE_SHAPE)
             input_img = np.expand_dims(face, axis=0)
             input_img = np.expand_dims(input_img, axis=-1)
             result = model.predict(input_img)[0]
@@ -68,16 +70,20 @@ def showScreenAndDetectFace(model, capture):
         # case : haar cascade / if 문 내용 위와 동일.
         # if len(face_coordinates) is not 0 and du.checkFaceCoordinate(face_coordinates, camera_width, camera_height) and isContinue:
 
-        refreshScreen(frame, face_coordinates)
+        refreshScreen(frame, bounding_box)
         key = cv2.waitKey(20)
         if key == ord('s'):
             isContinue = not isContinue
+        elif key == ord('c'):
+            isArea = not isArea
         elif key == ord('q'):
             break
 
 
-def refreshScreen(frame, face_coordinates):
-    du.drawFace(frame, face_coordinates)
+def refreshScreen(frame, bounding_box):
+    if isArea:
+        du.check_detect_area(frame)
+    du.drawFace(frame, bounding_box)
     # case : haar cascade
     # global camera_width, camera_height
     # if du.checkFaceCoordinate(face_coordinates, camera_width, camera_height):
