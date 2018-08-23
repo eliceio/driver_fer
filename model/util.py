@@ -64,12 +64,26 @@ def grad_cam(model, img_path, class_idx, layer_idx):
     
     return img_arr, cam, predictions
 
- # ex) img, cam, predictions = grad_cam(ak_net_0, img_path, class_idx, -13)
+def plot_grad_cam(model, img, pred_class=1, layer_idx = -5):
+        
+    img = np.expand_dims(img, 0)
+    #pred_class = np.argmax(model.predict(img))
+   
+    plt.figure(2)
+    fig, axes = plt.subplots(1, 2, figsize=(30, 24))
+    img, cam, predictions = grad_cam(model, img, pred_class, layer_idx) #in case of model class, model.model
+        
+    pred_values = np.squeeze(predictions, 0)
+    top1 = np.argmax(pred_values)
+    top1_value = np.round(float(pred_values[top1]*100), decimals = 4)
+    top4 = np.argpartition(pred_values, -4)[-4:]  #top 4
+    
+    axes[0, 0].set_title("Pred:{}{}%\n True:{}\n{}".format(class_label[top1], top1_value, class_label[pred_class], top4 ), fontsize=10)
+    axes[0, 0].imshow(img,cmap = 'gray')
+    axes[0, 1].imshow(img,cmap = 'gray')
+    axes[0, 1].imshow(cam, cmap = 'jet', alpha = 0.5)
 
-def generate_bbox(img, cam, thr):
-    labeled, nr_objects = ndimage.label(cam > thr)
-    props = regionprops(labeled)
-    return props
+ # ex) img, cam, predictions = grad_cam(ak_net_0, img_path, class_idx, -13)
 
 def plot_confusion_matrix(cm, classes,
                           normalize = False,
@@ -101,6 +115,7 @@ def plot_confusion_matrix(cm, classes,
     plt.tight_layout()
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
+    plt.savefig('Confusion_matrix')
 
 def make_confusion_matrix(model, x, y, normalize = True):
     predicted = model.predict(x)

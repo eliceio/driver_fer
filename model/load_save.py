@@ -109,7 +109,7 @@ def save_model_weight(model, model_name = 'kafka', path = './'):
     with open(path + model_name+'.json','w')as m:
         m.write(model_json)
     
-    model.save_weights(path + model_name + 'h5')     
+    model.save_weights(path + model_name + '.h5')     
     # Save model as PNG (picture)
     plot_model(model, to_file = model_name + '_net.png', show_shapes=True, show_layer_names=True)
     
@@ -117,21 +117,23 @@ def save_model_weight(model, model_name = 'kafka', path = './'):
     
 ### load autokeras result, get best model (torch), convert and return keras model.
 
-def load_autokeras(path='/tmp/face/'):
-    apple = ak.image_classifier.ImageClassifier(verbose = True, searcher_args={'trainer_args':{'max_iter_num':1}}, path = path, resume=True)
+def load_autokeras(path='python/autokeras/'):
+    apple = ak.image_classifier.ImageClassifier(verbose = True, searcher_args={'trainer_args':{'max_iter_num':1}}, path = './', resume=True)
     searcher = apple.load_searcher()
     #searcher.history
     #apple.path
-    
+    best_id = apple.get_best_model_id
+    print(best_id)
     graph = searcher.load_best_model()
     
     # Or you can get the best model by ID
-    #best_id = apple.get_bset_model_id
+    
     #graph = searcher.load_model_by_id(best_id)
     
     #torch_model = graph.produce_model()
     
     keras_model = graph.produce_keras_model()   # convert model from torch to keras
+    save_model_weight(keras_model)
 
     return keras_model
 
@@ -154,3 +156,10 @@ def cvt_csv2face():
         #plt.show(picture)
         cv2.imwrite(os.path.join(path, class_label[labels[i]], img_name), picture, [cv2.IMWRITE_PNG_COMPRESSION, 0])
         #params for PNG, low value means low compression, big file size.(0 to 9)
+
+if __name__ == "__main__":
+    print('start')
+    #cvt_csv2face()
+    load_autokeras()
+    
+    
