@@ -24,6 +24,7 @@ resnet_weight_path = 'resnet_weight.h5'
 emotion = ['Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral']
 isContinue = True
 isArea = False
+isLandmark = False
 camera_width = 0
 camera_height = 0
 
@@ -48,7 +49,7 @@ def setDefaultCameraSetting():
 
 
 def showScreenAndDetectFace(model, capture):
-    global isContinue, isArea
+    global isContinue, isArea, isLandmark
     while True:
         ret, frame = capture.read()
         # case : dlib
@@ -76,6 +77,8 @@ def showScreenAndDetectFace(model, capture):
             isContinue = not isContinue
         elif key == ord('c'):
             isArea = not isArea
+        elif key == ord('l'):
+            isLandmark = not isLandmark
         elif key == ord('q'):
             break
 
@@ -83,6 +86,8 @@ def showScreenAndDetectFace(model, capture):
 def refreshScreen(frame, bounding_box):
     if isArea:
         du.check_detect_area(frame)
+    if isLandmark:
+        du.draw_landmark(frame)
     du.drawFace(frame, bounding_box)
     # case : haar cascade
     # global camera_width, camera_height

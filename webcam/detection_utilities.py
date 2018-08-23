@@ -13,6 +13,7 @@ RED_COLOR = (0, 0, 255)
 WHITE_COLOR = (255, 255, 255)
 
 min_x, max_x, min_y, max_y = 0, 0, 0, 0
+rect = None
 
 
 # Face Detection using Haar Cascades
@@ -92,13 +93,26 @@ def check_detect_area(frame):
     cv2.line(frame, (max_x, min_y), (max_x, max_y), WHITE_COLOR, 2)
 
 
+def draw_landmark(frame):
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    shape = predictor(gray, rect)
+    shape = face_utils.shape_to_np(shape)
+
+    for (i, (x, y)) in enumerate(shape):
+        cv2.circle(frame, (x, y), 1, (0, 0, 255), -1)
+        cv2.putText(frame, str(i + 1), (x - 10, y - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 0, 255), 1)
+
+
 def checkFaceCoordinate(face_coordinates):
+    global rect
     if len(face_coordinates) > 0:
         print(face_coordinates[0])
         for face in face_coordinates:
             (x, y, w, h) = face_utils.rect_to_bb(face)
             if x in range(min_x, max_x) and y in range(min_y, max_y) \
                     and x + w in range(min_x, max_x) and y + h in range(min_y, max_y):
+                rect = face
                 return (x, y, w, h)
     return ()
     # case : haar cascade
