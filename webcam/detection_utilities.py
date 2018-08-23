@@ -10,6 +10,9 @@ predictor = dlib.shape_predictor(landmarks)
 
 FACE_CASCADE_PATH = "haarcascade_frontalface_default.xml"
 RED_COLOR = (0, 0, 255)
+WHITE_COLOR = (255, 255, 255)
+
+min_x, max_x, min_y, max_y = 0, 0, 0, 0
 
 
 # Face Detection using Haar Cascades
@@ -45,9 +48,8 @@ def dlib_face_coordinates(img):
 def drawFace(frame, face_coordinates):
     # case : dlib
     if len(face_coordinates) > 0:
-        for face in face_coordinates:
-            (x, y, w, h) = face_utils.rect_to_bb(face)
-            cv2.rectangle(frame, (x, y), (x + w, y + h), RED_COLOR, thickness=1)
+        (x, y, w, h) = face_coordinates
+        cv2.rectangle(frame, (x, y), (x + w, y + h), RED_COLOR, thickness=1)
     # case : haar cascade
     # for (x, y, w, h) in face_coordinates:
     #     cv2.rectangle(frame, (x, y), (x + w, y + h), RED_COLOR, thickness=2)
@@ -56,7 +58,7 @@ def drawFace(frame, face_coordinates):
 def crop_face(frame, face_coordinates):
     # case : dlib
     cropped_img = frame
-    (x, y, w, h) = face_utils.rect_to_bb(face_coordinates[0])
+    (x, y, w, h) = face_coordinates
     cropped_img = frame[y - int(h / 4):y + h + int(h / 4), x - int(w / 4):x + w + int(w / 4)]
     # cv2.imwrite('./0.png', cropped_img, params=[cv2.IMWRITE_PNG_COMPRESSION, 0])
 
@@ -75,13 +77,37 @@ def preprocess(img, face_coordinates, face_shape=(48, 48)):
     return face_gray
 
 
-def checkFaceCoordinate(face_coordinates, width, height):
-    for (x, y, w, h) in face_coordinates:
-        x1 = int(width * 0.25)
-        x2 = int(width * 0.5)
-        y1 = int(height * 0.25)
-        y2 = int(height * 0.5)
-        if x in range(x1, x2) and y in range(y1, y2):
-            return True
-        else:
-            return False
+def set_default_min_max_area(width, height):
+    global min_x, max_x, min_y, max_y
+    min_x = int(width * 0.3)
+    max_x = int(width * 0.75)
+    min_y = int(height * 0.25)
+    max_y = int(height * 0.75)
+
+
+def check_detect_area(frame):
+    cv2.line(frame, (min_x, min_y), (min_x, max_y), WHITE_COLOR, 2)
+    cv2.line(frame, (min_x, max_y), (max_x, max_y), WHITE_COLOR, 2)
+    cv2.line(frame, (min_x, min_y), (max_x, min_y), WHITE_COLOR, 2)
+    cv2.line(frame, (max_x, min_y), (max_x, max_y), WHITE_COLOR, 2)
+
+
+def checkFaceCoordinate(face_coordinates):
+    if len(face_coordinates) > 0:
+        print(face_coordinates[0])
+        for face in face_coordinates:
+            (x, y, w, h) = face_utils.rect_to_bb(face)
+            if x in range(min_x, max_x) and y in range(min_y, max_y) \
+                    and x + w in range(min_x, max_x) and y + h in range(min_y, max_y):
+                return (x, y, w, h)
+    return ()
+    # case : haar cascade
+    # for (x, y, w, h) in face_coordinates:
+    #     x1 = int(width * 0.25)
+    #     x2 = int(width * 0.5)
+    #     y1 = int(height * 0.25)
+    #     y2 = int(height * 0.5)
+    #     if x in range(x1, x2) and y in range(y1, y2):
+    #         return True
+    #     else:
+    #         return False
