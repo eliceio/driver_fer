@@ -35,8 +35,6 @@ def load_data():
     x_test = np.array([list(map(int, x.split())) for x in fer_test['pixels'].values])
     y_test = np.array(fer_test['emotion'].values)
 
-    x_train = normalize_x(x_train)
-    x_test = normalize_x(x_test)
     y_train = np_utils.to_categorical(y_train, n_class)
     y_test = np_utils.to_categorical(y_test, n_class)
 
@@ -73,6 +71,30 @@ def normalize_x(data):
     faces = np.expand_dims(faces, -1)
     return faces
 
+def normalize_resize(data, target_size = 197):
+    #print(np.shape(data))
+    new_shape = (target_size, target_size)
+    
+    for i, face in enumerate(data):
+        #print(i, np.shape(face))
+
+        if i==0:
+            face = face.reshape(48,48)/255.0
+            faces = cv2.resize(face, new_shape)
+            faces = faces.reshape(1, target_size, target_size, 1)
+            #print(np.shape(faces))
+        else:
+            face = face.reshape(48,48)/255.0
+            face = cv2.resize(face, new_shape)
+            face = face.reshape(1,target_size, target_size, 1)
+            #print(np.shape(face))
+            #print(np.shape(faces))
+            faces = np.concatenate((faces, face), axis=0)
+        
+        if i%100==0:
+            print(np.shape(faces))
+            
+    return faces 
 
 #from autokeras.preprocessor import OneHotEncoder, DataTransformer
 #from autokeras.constant import Constant
@@ -160,6 +182,15 @@ def cvt_csv2face():
 if __name__ == "__main__":
     print('start')
     #cvt_csv2face()
-    load_autokeras()
+    #load_autokeras()
+    x_train, x_test, y_train, y_test = load_data()
+    x_train = normalize_resize(x_train)
+    x_test = normalize_resize(x_test)
+    
+    np.save('./x_train_197.npy', x_train)
+    np.save('./x_test_197.npy', x_test)
+    np.save('./y_train.npy', y_train)
+    np.save('./y_test.npy', y_test)
+    
     
     
