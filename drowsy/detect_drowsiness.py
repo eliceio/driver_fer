@@ -37,6 +37,16 @@ COUNTER = 0
 ALARM_ON = False
 start_time = 0
 end_time = 0
+ap = argparse.ArgumentParser()
+ap.add_argument("-p", "--shape-predictor", default="shape_predictor_68_face_landmarks.dat",
+                    help="path to facial landmark predictor")
+ap.add_argument("-a", "--alarm", default="alarm.WAV",
+                    help="path alarm .WAV file")
+ap.add_argument("-w", "--webcam", type=int, default=0,
+                    help="index of webcam on system")
+args = vars(ap.parse_args())
+
+
 
 
 def sound_alarm(path):
@@ -106,7 +116,12 @@ def eye_size_cal(ear,frame):
     return user_eye, Sleeping_eye
 
 
-def current_eye_size(gray,rect,frame):
+def current_eye_size(gray,rect,frame,predictor):
+
+
+    (lStart, lEnd) = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
+    (rStart, rEnd) = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
+
     shape = predictor(gray, rect)
     shape = face_utils.shape_to_np(shape)
 
@@ -131,14 +146,20 @@ def defalut(vs,cv2):
     cv2.rectangle(frame, (130, 80), (330, 280), (255, 0, 0), 3)
 
     # detect faces in the grayscale frame
-    rects = detector(gray, 0)
-    return rects,frame,gray
+
+    return frame,gray
+
+
 
 def drowsy_detection(vs):
     global repeat,ALARM_ON,Eye_Notrecognition_time,user_eye,Sleeping_eye,eye_open,COUNTER,end_time,start_time,count_drowsy_detection,Slow_blinking,TOTAL
+    detector = dlib.get_frontal_face_detector()
+    predictor = dlib.shape_predictor(args["shape_predictor"])
+
     while True:
         repeat += 1
-        rects,frame, gray=defalut(vs,cv2)
+        frame, gray=defalut(vs,cv2)
+        rects = detector(gray, 0)
 
         ##눈 인식이 20초 이상 되지 않을 경우 알림 울리기
         if not rects:
@@ -152,7 +173,7 @@ def drowsy_detection(vs):
         # loop over the face detections
         for rect in rects:
             Eye_Notrecognition_time = 0
-            ear = current_eye_size(gray,rect,frame)
+            ear = current_eye_size(gray,rect,frame,predictor)
 
             #사용자의 평균 눈 크기 구하기
             if repeat >= 41 and repeat <=45:
@@ -217,23 +238,7 @@ def drowsy_detection(vs):
 
 if __name__ == '__main__':
     # 인자값, default로 설정 완료
-    ap = argparse.ArgumentParser()
-    ap.add_argument("-p", "--shape-predictor", default="shape_predictor_68_face_landmarks.dat",
-                    help="path to facial landmark predictor")
-    ap.add_argument("-a", "--alarm", default="alarm.WAV",
-                    help="path alarm .WAV file")
-    ap.add_argument("-w", "--webcam", type=int, default=0,
-                    help="index of webcam on system")
-    args = vars(ap.parse_args())
 
-
-    print("[INFO] loading facial landmark predictor...")
-    detector = dlib.get_frontal_face_detector()
-
-    predictor = dlib.shape_predictor(args["shape_predictor"])
-
-    (lStart, lEnd) = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
-    (rStart, rEnd) = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
 
     print("[INFO] starting video stream thread...")
     vs = VideoStream(src=args["webcam"]).start()
