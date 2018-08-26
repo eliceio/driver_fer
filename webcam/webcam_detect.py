@@ -54,7 +54,8 @@ def showScreenAndDetectFace(model, capture):
         ret, frame = capture.read()
         # case : dlib
         face_coordinates = du.dlib_face_coordinates(frame)
-        bounding_box = du.checkFaceCoordinate(face_coordinates)
+        rect, bounding_box = du.checkFaceCoordinate(face_coordinates)
+        du.drowsy_detection(frame, rect,camera_width)
         # case : haar cascade
         # face_coordinates = du.getFaceCoordinates(frame)
 
@@ -66,8 +67,10 @@ def showScreenAndDetectFace(model, capture):
             input_img = np.expand_dims(input_img, axis=-1)
             result = model.predict(input_img)[0]
             index = np.argmax(result)
-            print("Emotion : ", emotion[index])
-            cv2.putText(frame, emotion[index], (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+
+            if du.repeat >= 56:
+                print("Emotion : ", emotion[index])
+                cv2.putText(frame, emotion[index], (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
         # case : haar cascade / if 문 내용 위와 동일.
         # if len(face_coordinates) is not 0 and du.checkFaceCoordinate(face_coordinates, camera_width, camera_height) and isContinue:
 
@@ -88,6 +91,7 @@ def refreshScreen(frame, bounding_box):
         du.check_detect_area(frame)
     if isLandmark:
         du.draw_landmark(frame)
+
     du.drawFace(frame, bounding_box)
     # case : haar cascade
     # global camera_width, camera_height
