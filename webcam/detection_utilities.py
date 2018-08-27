@@ -7,7 +7,7 @@ import playsound
 import time
 
 # dlib을 위한 변수
-landmarks = 'shape_predictor_68_face_landmarks.dat'
+landmarks = '../model/shape_predictor_68_face_landmarks.dat'  # jj_modify for relative path to the dat
 print("[INFO] loading facial landmark predictor...")
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor(landmarks)

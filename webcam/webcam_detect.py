@@ -7,8 +7,10 @@ sys.path.append("../")
 import model.basenet as baseNet
 import detection_utilities as du
 
+from keras.models import load_model
+
 parser = argparse.ArgumentParser(description="운전자 졸음, 난폭 운전 예방 시스템")
-parser.add_argument('model', type=str, default='basenet', choices=['basenet', 'vgg16', 'resnet', 'ensemble'],
+parser.add_argument('model', type=str, default='basenet', choices=['ak','basenet', 'vgg16', 'resnet', 'ensemble'],
                     help="운전자 감정 예측을 위한 모델을 선택")
 args = parser.parse_args()
 model_name = args.model
@@ -20,8 +22,10 @@ basenet_weight_path = 'baseNet_weight.h5'
 # 이런 식으로 나중에 변경.
 vgg16_weight_path = 'vgg16_weight.h5'
 resnet_weight_path = 'resnet_weight.h5'
+ak_path = '../model/models/ak_3class_transfer.h5'  #jj_add / model path
 
 emotion = ['Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral']
+
 isContinue = True
 isArea = True
 isLandmark = False
@@ -51,8 +55,12 @@ def setDefaultCameraSetting():
     cv2.setWindowProperty(winname=windowName, prop_id=cv2.WINDOW_FULLSCREEN, prop_value=cv2.WINDOW_FULLSCREEN)
 
 
-def showScreenAndDetectFace(model, capture):
+
+def showScreenAndDetectFace(model, capture, emotion):  #jj_add / for different emotion class models
     global isContinue, isArea, isLandmark, input_img, rect, bounding_box
+    
+    img_counter = 0  # jj_add / for counting images that are saved (option) 
+    
     while True:
         input_img, rect, bounding_box = None, None, None
         ret, frame = capture.read()
@@ -82,6 +90,13 @@ def showScreenAndDetectFace(model, capture):
             du.reduce_detect_area()
         elif key == ord('q'):
             break
+        elif key%256 == 32:  # jj_add / press space bar to save cropped gray image 
+          
+            img_name = "cropped_gray_{}.png".format(img_counter)
+    
+            cv2.imwrite(img_name, face)
+            print("{} written!".format(img_name))
+            img_counter += 1
 
 
 def detect_area_driver(frame, face_coordinates):
@@ -118,15 +133,23 @@ def chooseWeight(model_name):
         return vgg16_weight_path
     elif model_name == 'resnet':
         return resnet_weight_path
+    elif model_name=='ak':
+        emotion=['Angry','Happy','Neutral']  ## jj_add /  3 emotion classes for ak net. return path and emotion classes 
+        return ak_path, emotion
 
 
 def main():
     print("Start main() function.")
-    model_weight_path = chooseWeight(model_name)
-    model = buildNet(model_weight_path)
+    model_weight_path, emotion = chooseWeight(model_name)
+    
+    if model_name =='ak':   ## jj_add /  if model name is ak, than just load_model (without compile?)
+        model = load_model(model_weight_path)
+    else:
+        model = buildNet(model_weight_path)
+    
     capture = getCameraStreaming()
     setDefaultCameraSetting()
-    showScreenAndDetectFace(model, capture)
+    showScreenAndDetectFace(model, capture, emotion)  #jj_add / for different emotion class models
 
 
 if __name__ == '__main__':
