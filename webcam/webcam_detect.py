@@ -7,8 +7,10 @@ sys.path.append("../")
 import model.basenet as baseNet
 import detection_utilities as du
 
+from keras.models import load_model
+
 parser = argparse.ArgumentParser(description="운전자 졸음, 난폭 운전 예방 시스템")
-parser.add_argument('model', type=str, default='basenet', choices=['basenet', 'vgg16', 'resnet', 'ensemble'],
+parser.add_argument('model', type=str, default='basenet', choices=['ak','basenet', 'vgg16', 'resnet', 'ensemble'],
                     help="운전자 감정 예측을 위한 모델을 선택")
 args = parser.parse_args()
 model_name = args.model
