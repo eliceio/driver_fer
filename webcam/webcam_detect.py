@@ -85,6 +85,13 @@ def showScreenAndDetectFace(model, capture, emotion):  #jj_add / for different e
             isLandmark = not isLandmark
         elif key == ord('q'):
             break
+        elif key%256 == 32:  # jj_add / press space bar to save cropped gray image 
+          
+            img_name = "cropped_gray_{}.png".format(img_counter)
+    
+            cv2.imwrite(img_name, face)
+            print("{} written!".format(img_name))
+            img_counter += 1
 
 
 def refreshScreen(frame, bounding_box):
