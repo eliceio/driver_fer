@@ -17,6 +17,8 @@ RED_COLOR = (0, 0, 255)
 WHITE_COLOR = (255, 255, 255)
 
 cam_width, cam_height = 0, 0
+expand_width, expand_height = 0, 0
+reduce_width, reduce_height = 0, 0
 min_x, max_x, min_y, max_y = 0, 0, 0, 0
 
 (lStart, lEnd) = face_utils.FACIAL_LANDMARKS_68_IDXS["left_eye"]
@@ -64,12 +66,33 @@ def preprocess(img, face_coordinates, face_shape=(48, 48)):
 
 
 def set_default_min_max_area(width, height):
-    global cam_width, cam_height, min_x, max_x, min_y, max_y
+    global cam_width, cam_height, min_x, max_x, min_y, max_y, \
+        expand_width, expand_height, reduce_width, reduce_height
     cam_width, cam_height = width, height
     min_x = int(width * 0.2)
     max_x = int(width * 0.8)
     min_y = int(height * 0.2)
     max_y = int(height * 0.8)
+    expand_width = int(cam_width * 0.05)
+    expand_height = int(cam_height * 0.05)
+    reduce_width = int(cam_width * 0.05)
+    reduce_height = int(cam_height * 0.05)
+
+
+def expend_detect_area():
+    global min_x, max_x, min_y, max_y
+    min_x -= expand_width
+    min_y -= expand_height
+    max_x += expand_width
+    max_y += expand_height
+
+
+def reduce_detect_area():
+    global min_x, max_x, min_y, max_y
+    min_x += reduce_width
+    min_y += reduce_height
+    max_x -= reduce_width
+    max_y -= reduce_height
 
 
 def check_detect_area(frame):
