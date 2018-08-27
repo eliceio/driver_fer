@@ -172,16 +172,16 @@ def eye_aspect_ratio(eye):
 def start(frame):
     global repeat
     check_detect_area(frame)
-    if repeat >= 1 and repeat <= 10:
+    if repeat in range(1, 11):
         cv2.putText(frame, "Look at the camera for five seconds.", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
                     (255, 0, 0), 2)
-    elif repeat >= 11 and repeat <= 20:
+    elif repeat in range(11, 21):
         cv2.putText(frame, "3", (150, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
                     (255, 0, 0), 2)
-    elif repeat >= 21 and repeat <= 30:
+    elif repeat in range(21, 31):
         cv2.putText(frame, "2", (150, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
                     (255, 0, 0), 2)
-    elif repeat >= 31 and repeat <= 40:
+    elif repeat in range(31, 41):
         cv2.putText(frame, "1", (150, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
                     (255, 0, 0), 2)
 
