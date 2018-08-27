@@ -52,8 +52,11 @@ def setDefaultCameraSetting():
     cv2.setWindowProperty(winname=windowName, prop_id=cv2.WINDOW_FULLSCREEN, prop_value=cv2.WINDOW_FULLSCREEN)
 
 
-def showScreenAndDetectFace(model, capture):
+def showScreenAndDetectFace(model, capture, emotion):  #jj_add / for different emotion class models
     global isContinue, isArea, isLandmark
+    
+    img_counter = 0  # jj_add / for counting images that are saved (option) 
+    
     while True:
         ret, frame = capture.read()
         face_coordinates = du.dlib_face_coordinates(frame)
