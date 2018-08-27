@@ -37,17 +37,30 @@ def drawFace(frame, face_coordinates):
 def crop_face(frame, face_coordinates):
     cropped_img = frame
     (x, y, w, h) = face_coordinates
-    cropped_img = frame[y - int(h / 4):y + h + int(h / 4), x - int(w / 4):x + w + int(w / 4)]
-    # cv2.imwrite('./0.png', cropped_img, params=[cv2.IMWRITE_PNG_COMPRESSION, 0])
-    return cropped_img
+    if check_resize_area(face_coordinates):
+        cropped_img = frame[y - int(h / 4):y + h + int(h / 4), x - int(w / 4):x + w + int(w / 4)]
+        # cv2.imwrite('./0.png', cropped_img, params=[cv2.IMWRITE_PNG_COMPRESSION, 0])
+        return cropped_img
+    else:
+        return None
+
+
+def check_resize_area(face_coordinates):
+    (x, y, w, h) = face_coordinates
+    if x - int(w / 4) > 0 and y - int(h / 4) > 0:
+        return True
+    return False
 
 
 def preprocess(img, face_coordinates, face_shape=(48, 48)):
     face = crop_face(img, face_coordinates)
-    face_resize = cv2.resize(face, face_shape)
-    face_gray = cv2.cvtColor(face_resize, cv2.COLOR_BGR2GRAY)
-    cv2.imwrite('./123.png', face_gray, params=[cv2.IMWRITE_PNG_COMPRESSION, 0])
-    return face_gray
+    if face is not None:
+        face_resize = cv2.resize(face, face_shape)
+        face_gray = cv2.cvtColor(face_resize, cv2.COLOR_BGR2GRAY)
+        cv2.imwrite('./123.png', face_gray, params=[cv2.IMWRITE_PNG_COMPRESSION, 0])
+        return face_gray
+    else:
+        return None
 
 
 def set_default_min_max_area(width, height):
@@ -76,13 +89,18 @@ def draw_landmark(frame, rect):
             cv2.circle(frame, (x, y), 1, (0, 0, 255), -1)
 
 
-def checkFaceCoordinate(face_coordinates):
+def checkFaceCoordinate(face_coordinates, in_area=True):
     if len(face_coordinates) > 0:
-        for face in face_coordinates:
+        if in_area:
+            for face in face_coordinates:
+                (x, y, w, h) = face_utils.rect_to_bb(face)
+                if x in range(min_x, max_x) and y in range(min_y, max_y) \
+                        and x + w in range(min_x, max_x) and y + h in range(min_y, max_y):
+                    return face, (x, y, w, h)
+        else:
+            face = face_coordinates[0]
             (x, y, w, h) = face_utils.rect_to_bb(face)
-            if x in range(min_x, max_x) and y in range(min_y, max_y) \
-                    and x + w in range(min_x, max_x) and y + h in range(min_y, max_y):
-                return face, (x, y, w, h)
+            return face, (x, y, w, h)
     return None, None
 
 
