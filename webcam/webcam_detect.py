@@ -24,7 +24,7 @@ vgg16_weight_path = 'vgg16_weight.h5'
 resnet_weight_path = 'resnet_weight.h5'
 ak_path = '../model/models/ak_3class_transfer.h5'  #jj_add / model path
 
-emotion = ['Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral']
+emotion_7_class = ['Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral']
 
 isContinue = True
 isArea = True
@@ -58,9 +58,9 @@ def setDefaultCameraSetting():
 
 def showScreenAndDetectFace(model, capture, emotion):  #jj_add / for different emotion class models
     global isContinue, isArea, isLandmark, input_img, rect, bounding_box
-    
-    img_counter = 0  # jj_add / for counting images that are saved (option) 
-    
+
+    img_counter = 0  # jj_add / for counting images that are saved (option)
+
     while True:
         input_img, rect, bounding_box = None, None, None
         ret, frame = capture.read()
@@ -90,10 +90,10 @@ def showScreenAndDetectFace(model, capture, emotion):  #jj_add / for different e
             du.reduce_detect_area()
         elif key == ord('q'):
             break
-        elif key%256 == 32:  # jj_add / press space bar to save cropped gray image 
-          
+        elif key%256 == 32:  # jj_add / press space bar to save cropped gray image
+
             img_name = "cropped_gray_{}.png".format(img_counter)
-    
+
             cv2.imwrite(img_name, face)
             print("{} written!".format(img_name))
             img_counter += 1
@@ -128,25 +128,25 @@ def buildNet(weights_file):
 
 def chooseWeight(model_name):
     if model_name == 'basenet':
-        return basenet_weight_path
+        return basenet_weight_path, emotion_7_class
     elif model_name == 'vgg16':
         return vgg16_weight_path
     elif model_name == 'resnet':
         return resnet_weight_path
     elif model_name=='ak':
-        emotion=['Angry','Happy','Neutral']  ## jj_add /  3 emotion classes for ak net. return path and emotion classes 
+        emotion=['Angry','Happy','Neutral']  ## jj_add /  3 emotion classes for ak net. return path and emotion classes
         return ak_path, emotion
 
 
 def main():
     print("Start main() function.")
     model_weight_path, emotion = chooseWeight(model_name)
-    
+
     if model_name =='ak':   ## jj_add /  if model name is ak, than just load_model (without compile?)
         model = load_model(model_weight_path)
     else:
         model = buildNet(model_weight_path)
-    
+
     capture = getCameraStreaming()
     setDefaultCameraSetting()
     showScreenAndDetectFace(model, capture, emotion)  #jj_add / for different emotion class models
