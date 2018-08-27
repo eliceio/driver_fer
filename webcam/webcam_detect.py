@@ -76,6 +76,10 @@ def showScreenAndDetectFace(model, capture):
             isArea = not isArea
         elif key == ord('l'):
             isLandmark = not isLandmark
+        elif key == ord('o'):
+            du.expend_detect_area()
+        elif key == ord('p'):
+            du.reduce_detect_area()
         elif key == ord('q'):
             break
 
