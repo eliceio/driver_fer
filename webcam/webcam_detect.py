@@ -27,10 +27,13 @@ ak_path = '../model/models/ak_3class_transfer.h5'  #jj_add / model path
 emotion = ['Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral']
 
 isContinue = True
-isArea = False
+isArea = True
 isLandmark = False
 camera_width = 0
 camera_height = 0
+input_img = None
+rect = None
+bounding_box = None
 
 
 def getCameraStreaming():
@@ -52,30 +55,28 @@ def setDefaultCameraSetting():
     cv2.setWindowProperty(winname=windowName, prop_id=cv2.WINDOW_FULLSCREEN, prop_value=cv2.WINDOW_FULLSCREEN)
 
 
+
 def showScreenAndDetectFace(model, capture, emotion):  #jj_add / for different emotion class models
-    global isContinue, isArea, isLandmark
+    global isContinue, isArea, isLandmark, input_img, rect, bounding_box
     
     img_counter = 0  # jj_add / for counting images that are saved (option) 
     
     while True:
+        input_img, rect, bounding_box = None, None, None
         ret, frame = capture.read()
         face_coordinates = du.dlib_face_coordinates(frame)
-        rect, bounding_box = du.checkFaceCoordinate(face_coordinates)
-        du.drowsy_detection(frame, rect, camera_width)
 
-        # 얼굴을 detection 한 경우.
-        if len(bounding_box) > 0 and isContinue:
-            face = du.preprocess(frame, bounding_box, FACE_SHAPE)
-            input_img = np.expand_dims(face, axis=0)
-            input_img = np.expand_dims(input_img, axis=-1)
+        if isContinue:
+            detect_area_driver(frame, face_coordinates)
+
+        if input_img is not None:
             result = model.predict(input_img)[0]
-            index = np.argmax(result)
-
+            index = int(np.argmax(result))
             if du.repeat >= 56:
                 print("Emotion : ", emotion[index])
                 cv2.putText(frame, emotion[index], (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
-        refreshScreen(frame, bounding_box)
+        refreshScreen(frame)
         key = cv2.waitKey(20)
         if key == ord('s'):
             isContinue = not isContinue
@@ -83,6 +84,10 @@ def showScreenAndDetectFace(model, capture, emotion):  #jj_add / for different e
             isArea = not isArea
         elif key == ord('l'):
             isLandmark = not isLandmark
+        elif key == ord('o'):
+            du.expend_detect_area()
+        elif key == ord('p'):
+            du.reduce_detect_area()
         elif key == ord('q'):
             break
         elif key%256 == 32:  # jj_add / press space bar to save cropped gray image 
@@ -94,11 +99,25 @@ def showScreenAndDetectFace(model, capture, emotion):  #jj_add / for different e
             img_counter += 1
 
 
-def refreshScreen(frame, bounding_box):
+def detect_area_driver(frame, face_coordinates):
+    global input_img, rect, bounding_box
+    rect, bounding_box = du.checkFaceCoordinate(face_coordinates, isArea)
+    du.drowsy_detection(frame, rect)
+
+    # 얼굴을 detection 한 경우.
+    if bounding_box is not None and isContinue:
+        face = du.preprocess(frame, bounding_box, FACE_SHAPE)
+        if face is not None:
+            input_img = np.expand_dims(face, axis=0)
+            input_img = np.expand_dims(input_img, axis=-1)
+
+
+def refreshScreen(frame):
     if isArea:
         du.check_detect_area(frame)
     if isLandmark:
-        du.draw_landmark(frame)
+        du.draw_landmark(frame, rect)
+    # if bounding_box is not None:
     du.drawFace(frame, bounding_box)
     cv2.imshow(windowName, frame)
 

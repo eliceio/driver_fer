@@ -16,8 +16,10 @@ FACE_CASCADE_PATH = "haarcascade_frontalface_default.xml"
 RED_COLOR = (0, 0, 255)
 WHITE_COLOR = (255, 255, 255)
 
+cam_width, cam_height = 0, 0
+expand_width, expand_height = 0, 0
+reduce_width, reduce_height = 0, 0
 min_x, max_x, min_y, max_y = 0, 0, 0, 0
-rect = None
 
 (lStart, lEnd) = face_utils.FACIAL_LANDMARKS_68_IDXS["left_eye"]
 (rStart, rEnd) = face_utils.FACIAL_LANDMARKS_68_IDXS["right_eye"]
@@ -29,7 +31,7 @@ def dlib_face_coordinates(img):
 
 
 def drawFace(frame, face_coordinates):
-    if len(face_coordinates) > 0:
+    if face_coordinates is not None:
         (x, y, w, h) = face_coordinates
         cv2.rectangle(frame, (x, y), (x + w, y + h), RED_COLOR, thickness=1)
 
@@ -37,25 +39,60 @@ def drawFace(frame, face_coordinates):
 def crop_face(frame, face_coordinates):
     cropped_img = frame
     (x, y, w, h) = face_coordinates
-    cropped_img = frame[y - int(h / 4):y + h + int(h / 4), x - int(w / 4):x + w + int(w / 4)]
-    # cv2.imwrite('./0.png', cropped_img, params=[cv2.IMWRITE_PNG_COMPRESSION, 0])
-    return cropped_img
+    if check_resize_area(face_coordinates):
+        cropped_img = frame[y - int(h / 4):y + h + int(h / 4), x - int(w / 4):x + w + int(w / 4)]
+        # cv2.imwrite('./0.png', cropped_img, params=[cv2.IMWRITE_PNG_COMPRESSION, 0])
+        return cropped_img
+    else:
+        return None
+
+
+def check_resize_area(face_coordinates):
+    (x, y, w, h) = face_coordinates
+    if x - int(w / 4) > 0 and y - int(h / 4) > 0:
+        return True
+    return False
 
 
 def preprocess(img, face_coordinates, face_shape=(48, 48)):
     face = crop_face(img, face_coordinates)
-    face_resize = cv2.resize(face, face_shape)
-    face_gray = cv2.cvtColor(face_resize, cv2.COLOR_BGR2GRAY)
-    cv2.imwrite('./123.png', face_gray, params=[cv2.IMWRITE_PNG_COMPRESSION, 0])
-    return face_gray
+    if face is not None:
+        face_resize = cv2.resize(face, face_shape)
+        face_gray = cv2.cvtColor(face_resize, cv2.COLOR_BGR2GRAY)
+        cv2.imwrite('./123.png', face_gray, params=[cv2.IMWRITE_PNG_COMPRESSION, 0])
+        return face_gray
+    else:
+        return None
 
 
 def set_default_min_max_area(width, height):
+    global cam_width, cam_height, min_x, max_x, min_y, max_y, \
+        expand_width, expand_height, reduce_width, reduce_height
+    cam_width, cam_height = width, height
+    min_x = int(width * 0.2)
+    max_x = int(width * 0.8)
+    min_y = int(height * 0.2)
+    max_y = int(height * 0.8)
+    expand_width = int(cam_width * 0.05)
+    expand_height = int(cam_height * 0.05)
+    reduce_width = int(cam_width * 0.05)
+    reduce_height = int(cam_height * 0.05)
+
+
+def expend_detect_area():
     global min_x, max_x, min_y, max_y
-    min_x = int(width * 0.3)
-    max_x = int(width * 0.75)
-    min_y = int(height * 0.25)
-    max_y = int(height * 0.75)
+    min_x -= expand_width
+    min_y -= expand_height
+    max_x += expand_width
+    max_y += expand_height
+
+
+def reduce_detect_area():
+    global min_x, max_x, min_y, max_y
+    min_x += reduce_width
+    min_y += reduce_height
+    max_x -= reduce_width
+    max_y -= reduce_height
 
 
 def check_detect_area(frame):
@@ -65,25 +102,29 @@ def check_detect_area(frame):
     cv2.line(frame, (max_x, min_y), (max_x, max_y), WHITE_COLOR, 2)
 
 
-def draw_landmark(frame):
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    shape = predictor(gray, rect)
-    shape = face_utils.shape_to_np(shape)
+def draw_landmark(frame, rect):
+    if rect is not None:
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        shape = predictor(gray, rect)
+        shape = face_utils.shape_to_np(shape)
 
-    for (i, (x, y)) in enumerate(shape):
-        cv2.circle(frame, (x, y), 1, (0, 0, 255), -1)
+        for (i, (x, y)) in enumerate(shape):
+            cv2.circle(frame, (x, y), 1, (0, 0, 255), -1)
 
 
-def checkFaceCoordinate(face_coordinates):
-    global rect
+def checkFaceCoordinate(face_coordinates, in_area=True):
     if len(face_coordinates) > 0:
-        for face in face_coordinates:
+        if in_area:
+            for face in face_coordinates:
+                (x, y, w, h) = face_utils.rect_to_bb(face)
+                if x in range(min_x, max_x) and y in range(min_y, max_y) \
+                        and x + w in range(min_x, max_x) and y + h in range(min_y, max_y):
+                    return face, (x, y, w, h)
+        else:
+            face = face_coordinates[0]
             (x, y, w, h) = face_utils.rect_to_bb(face)
-            if x in range(min_x, max_x) and y in range(min_y, max_y) \
-                    and x + w in range(min_x, max_x) and y + h in range(min_y, max_y):
-                rect = face
-                return face, (x, y, w, h)
-    return None, ()
+            return face, (x, y, w, h)
+    return None, None
 
 
 # 이 아래는 drowsy code.
@@ -116,13 +157,13 @@ end_time = 0
 
 
 # 5초동안 사용자 눈 크기 계산
-def eye_size_cal(ear, frame, camera_width):
+def eye_size_cal(ear, frame):
     global repeat, user_eye, Sleeping_eye
     user_eye += ear
     print("ear:" + str(ear))
     print("user : " + str(user_eye))
 
-    cv2.putText(frame, "eye size: {:.2f}".format(user_eye / (repeat - 40)), (int(camera_width * 0.7), 30),
+    cv2.putText(frame, "eye size: {:.2f}".format(user_eye / (repeat - 40)), (int(cam_width * 0.7), 30),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
     if repeat == 45:
         print("사용자 눈 크기 " + str(user_eye / 5))
@@ -132,7 +173,7 @@ def eye_size_cal(ear, frame, camera_width):
     return user_eye, Sleeping_eye
 
 
-def draw_eye(frame):
+def draw_eye(frame, rect):
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     shape = predictor(gray, rect)
     shape = face_utils.shape_to_np(shape)
@@ -171,7 +212,6 @@ def eye_aspect_ratio(eye):
 # 눈 크기를 측정하기 위해 처음 시작을 알리는 webcam 출력값
 def start(frame):
     global repeat
-    check_detect_area(frame)
     if repeat in range(1, 11):
         cv2.putText(frame, "Look at the camera for five seconds.", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
                     (255, 0, 0), 2)
@@ -209,7 +249,7 @@ def warning(frame):
     return ALARM_ON
 
 
-def drowsy_detection(frame, face, camera_width):
+def drowsy_detection(frame, face):
     global repeat, ALARM_ON, eye_not_recognition_time, user_eye, Sleeping_eye, eye_open, COUNTER, end_time, start_time, count_drowsy_detection, Slow_blinking, TOTAL
     repeat += 1
 
@@ -223,11 +263,11 @@ def drowsy_detection(frame, face, camera_width):
 
     if face is not None:
         eye_not_recognition_time = 0
-        ear = draw_eye(frame)
+        ear = draw_eye(frame, face)
 
         # 사용자의 평균 눈 크기 구하기
         if repeat in range(41, 46):
-            user_eye, Sleeping_eye = eye_size_cal(ear, frame, camera_width)
+            user_eye, Sleeping_eye = eye_size_cal(ear, frame)
         elif repeat in range(46, 56):
             cv2.putText(frame, "Start!", (150, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
 
@@ -270,9 +310,9 @@ def drowsy_detection(frame, face, camera_width):
                 ALARM_ON = False
 
             # draw the computed eye aspect ratio on the frame to help
-            cv2.putText(frame, "EAR: {:.2f}".format(ear), (int(camera_width * 0.8), 30),
+            cv2.putText(frame, "EAR: {:.2f}".format(ear), (int(cam_width * 0.8), 30),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
 
             # 눈 깜빡인 횟수 화면 출력
-            cv2.putText(frame, "Blinks: {}".format(TOTAL), (int(camera_width * 0.8), 50),
+            cv2.putText(frame, "Blinks: {}".format(TOTAL), (int(cam_width * 0.8), 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
