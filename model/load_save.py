@@ -9,6 +9,7 @@ import os
 import cv2
 import pandas as pd
 import numpy as np
+import dlib
 
 from keras.models import model_from_json
 from keras.models import load_model
@@ -179,18 +180,74 @@ def cvt_csv2face():
         cv2.imwrite(os.path.join(path, class_label[labels[i]], img_name), picture, [cv2.IMWRITE_PNG_COMPRESSION, 0])
         #params for PNG, low value means low compression, big file size.(0 to 9)
 
+def convert_csv_to_dlib():
+    print("convert csv to face dlib data start.\n")
+    print('Dlib face generation start.\n')
+    detector = dlib.get_frontal_face_detector() #Face detector
+    predictor = dlib.shape_predictor("./shape_predictor_68_face_landmarks.dat") #Landmark identifier. Set the filename to whatever you named the downloaded file
+    
+    fer = pd.read_csv(path + 'fer2013.csv')   
+    pictures = np.array([np.fromstring(x, np.uint8, sep=' ') for x in fer.pixels.values])
+    labels = np.array([np.fromstring(x, np.uint8) for x in fer.emotion.values]) #fromstring 대신 frombuffer 로 바꾸기. deprecate
+    labels = labels[:,0]
+ 
+   
+    if not os.path.exists(path + 'dlib/'):
+        os.makedirs(path + 'dlib/')
+        
+    for c_i, class_i in enumerate(class_label):
+        if not os.path.exists(path + 'dlib/' + class_i): # if there's no class folder, make it
+            os.makedirs(path + 'dlib/' + class_i)    
+                
+    landmarks = []
+    for i, picture in enumerate(pictures): 
+        xlist = []
+        ylist = []
+        picture = picture.reshape((48, 48))
+        img_name = 'dlib_%d.jpg' % i
+        path_name = os.path.join(path, 'dlib/', class_label[labels[i]], img_name)
+        #path_name = path + class_label[labels[i]] + img_name
+        #cv2.imwrite(path_name, picture)
+        
+ 
+        ## dlib save
+        #frame = cv2.imread(path_name)
+        
+        gray = cv2.cvtColor(picture, cv2.COLOR_BGR2GRAY)
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+        clahe_image = clahe.apply(gray)
+        detections = detector(clahe_image, 1) #Detect the faces in the image
+        for k,d in enumerate(detections): #For each detected face
+            shape = predictor(clahe_image, d) #Get coordinates
+            for i in range(1,68): # To draw 68 landmarks from dlib
+                cv2.circle(picture, (shape.part(i).x, shape.part(i).y), 1, (0,0,200), thickness=1) 
+                xlist.append(float(shape.part(i).x))
+                ylist.append(float(shape.part(i).y))
+                #For each point, draw a red circle with thickness2 on the original frame
+                
+            
+            for x, y in zip(xlist, ylist): #Store all landmarks in one list in the format x1,y1,x2,y2,etc.
+                landmarks.append(x)
+                landmarks.append(y)
+    
+        #cv2.imwrite(os.path.join(path,class_label[labels[i]], img_name), frame, [cv2.IMWRITE_PNG_COMPRESSION, 0])
+        cv2.imwrite(path_name, picture, [cv2.IMWRITE_PNG_COMPRESSION, 0])
+
 if __name__ == "__main__":
-    print('start')
+    print('Something start')
     #cvt_csv2face()
     #load_autokeras()
-    x_train, x_test, y_train, y_test = load_data()
-    x_train = normalize_resize(x_train)
-    x_test = normalize_resize(x_test)
-    
-    np.save('./x_train_197.npy', x_train)
-    np.save('./x_test_197.npy', x_test)
-    np.save('./y_train.npy', y_train)
-    np.save('./y_test.npy', y_test)
+#    x_train, x_test, y_train, y_test = load_data()
+#    x_train = normalize_resize(x_train)
+#    x_test = normalize_resize(x_test)
+#    
+#    np.save('./x_train_197.npy', x_train)
+#    np.save('./x_test_197.npy', x_test)
+#    np.save('./y_train.npy', y_train)
+#    np.save('./y_test.npy', y_test)
+    model = load_model('/python/ak_3class_transfer.h5')
+    model_name = 'ak_3class_transfer'
+    plot_model(model, to_file = model_name + '_net.png', show_shapes=True, show_layer_names=True)
     
     
     
