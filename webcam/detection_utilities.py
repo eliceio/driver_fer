@@ -23,57 +23,22 @@ rect = None
 (rStart, rEnd) = face_utils.FACIAL_LANDMARKS_68_IDXS["right_eye"]
 
 
-# Face Detection using Haar Cascades
-# URL : https://docs.opencv.org/3.4/d7/d8b/tutorial_py_face_detection.html
-def getFaceCoordinates(img):
-    # cv2.CascadeClassifier 특정 객체를 학습시켜 구분하기위함
-    # 여기서는 사람 얼굴 검출하기 위함
-    cascade = cv2.CascadeClassifier(FACE_CASCADE_PATH)
-
-    # 회색으로 색 변환.
-    imgToGray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    # frmae_img를 histogramEqualization 해준다.
-    # 설명 URL : https://docs.opencv.org/3.1.0/d5/daf/tutorial_py_histogram_equalization.html
-    src_img = cv2.equalizeHist(imgToGray)
-
-    # CascadeClassifier의 detectMultiScale 함수에 grayscale 이미지를 입력하여 얼굴을 검출합니다.
-    # 얼굴이 검출되면 위치를 리스트로 리턴합니다.
-    # 이 위치는 (x, y, w, h)와 같은 튜플이며 (x, y)는 검출된 얼굴의 좌상단 위치
-    # w, h는 가로, 세로 크기입니다.
-    coordinates = cascade.detectMultiScale(
-        image=src_img,
-        scaleFactor=1.3,
-        minNeighbors=4,
-        minSize=(48, 48))
-    return coordinates
-
-
 def dlib_face_coordinates(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     return detector(gray, 0)
 
 
 def drawFace(frame, face_coordinates):
-    # case : dlib
     if len(face_coordinates) > 0:
         (x, y, w, h) = face_coordinates
         cv2.rectangle(frame, (x, y), (x + w, y + h), RED_COLOR, thickness=1)
-    # case : haar cascade
-    # for (x, y, w, h) in face_coordinates:
-    #     cv2.rectangle(frame, (x, y), (x + w, y + h), RED_COLOR, thickness=2)
 
 
 def crop_face(frame, face_coordinates):
-    # case : dlib
     cropped_img = frame
     (x, y, w, h) = face_coordinates
     cropped_img = frame[y - int(h / 4):y + h + int(h / 4), x - int(w / 4):x + w + int(w / 4)]
     # cv2.imwrite('./0.png', cropped_img, params=[cv2.IMWRITE_PNG_COMPRESSION, 0])
-
-    # case : haar cascade
-    # cropped_img = frame
-    # for (x, y, w, h) in face_coordinates:
-    #     cropped_img = frame[y - int(h / 4):y + h + int(h / 4), x - int(w / 4):x + w + int(w / 4)]
     return cropped_img
 
 
@@ -107,8 +72,6 @@ def draw_landmark(frame):
 
     for (i, (x, y)) in enumerate(shape):
         cv2.circle(frame, (x, y), 1, (0, 0, 255), -1)
-        # cv2.putText(frame, str(i + 1), (x - 10, y - 10),
-        #             cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 0, 255), 1)
 
 
 def checkFaceCoordinate(face_coordinates):
@@ -121,17 +84,6 @@ def checkFaceCoordinate(face_coordinates):
                 rect = face
                 return face, (x, y, w, h)
     return None, ()
-    # case : haar cascade
-    # for (x, y, w, h) in face_coordinates:
-
-    #     x1 = int(width * 0.25)
-    #     x2 = int(width * 0.5)
-    #     y1 = int(height * 0.25)
-    #     y2 = int(height * 0.5)
-    #     if x in range(x1, x2) and y in range(y1, y2):
-    #         return True
-    #     else:
-    #         return False
 
 
 # 이 아래는 drowsy code.
@@ -164,13 +116,13 @@ end_time = 0
 
 
 # 5초동안 사용자 눈 크기 계산
-def eye_size_cal(ear, frame,camera_width):
+def eye_size_cal(ear, frame, camera_width):
     global repeat, user_eye, Sleeping_eye
     user_eye += ear
     print("ear:" + str(ear))
     print("user : " + str(user_eye))
 
-    cv2.putText(frame, "eye size: {:.2f}".format(user_eye / (repeat - 40)), (int(camera_width*0.7), 30),
+    cv2.putText(frame, "eye size: {:.2f}".format(user_eye / (repeat - 40)), (int(camera_width * 0.7), 30),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
     if repeat == 45:
         print("사용자 눈 크기 " + str(user_eye / 5))
@@ -220,16 +172,16 @@ def eye_aspect_ratio(eye):
 def start(frame):
     global repeat
     check_detect_area(frame)
-    if repeat >= 1 and repeat <= 10:
+    if repeat in range(1, 11):
         cv2.putText(frame, "Look at the camera for five seconds.", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
                     (255, 0, 0), 2)
-    elif repeat >= 11 and repeat <= 20:
+    elif repeat in range(11, 21):
         cv2.putText(frame, "3", (150, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
                     (255, 0, 0), 2)
-    elif repeat >= 21 and repeat <= 30:
+    elif repeat in range(21, 31):
         cv2.putText(frame, "2", (150, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
                     (255, 0, 0), 2)
-    elif repeat >= 31 and repeat <= 40:
+    elif repeat in range(31, 41):
         cv2.putText(frame, "1", (150, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
                     (255, 0, 0), 2)
 
@@ -257,7 +209,7 @@ def warning(frame):
     return ALARM_ON
 
 
-def drowsy_detection(frame, face,camera_width):
+def drowsy_detection(frame, face, camera_width):
     global repeat, ALARM_ON, eye_not_recognition_time, user_eye, Sleeping_eye, eye_open, COUNTER, end_time, start_time, count_drowsy_detection, Slow_blinking, TOTAL
     repeat += 1
 
@@ -275,7 +227,7 @@ def drowsy_detection(frame, face,camera_width):
 
         # 사용자의 평균 눈 크기 구하기
         if repeat in range(41, 46):
-            user_eye, Sleeping_eye = eye_size_cal(ear, frame,camera_width)
+            user_eye, Sleeping_eye = eye_size_cal(ear, frame, camera_width)
         elif repeat in range(46, 56):
             cv2.putText(frame, "Start!", (150, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
 
@@ -318,9 +270,9 @@ def drowsy_detection(frame, face,camera_width):
                 ALARM_ON = False
 
             # draw the computed eye aspect ratio on the frame to help
-            cv2.putText(frame, "EAR: {:.2f}".format(ear), (int(camera_width*0.8), 30),
+            cv2.putText(frame, "EAR: {:.2f}".format(ear), (int(camera_width * 0.8), 30),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
 
             # 눈 깜빡인 횟수 화면 출력
-            cv2.putText(frame, "Blinks: {}".format(TOTAL), (int(camera_width*0.8), 50),
+            cv2.putText(frame, "Blinks: {}".format(TOTAL), (int(camera_width * 0.8), 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)

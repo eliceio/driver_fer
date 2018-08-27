@@ -52,15 +52,11 @@ def showScreenAndDetectFace(model, capture):
     global isContinue, isArea, isLandmark
     while True:
         ret, frame = capture.read()
-        # case : dlib
         face_coordinates = du.dlib_face_coordinates(frame)
         rect, bounding_box = du.checkFaceCoordinate(face_coordinates)
-        du.drowsy_detection(frame, rect,camera_width)
-        # case : haar cascade
-        # face_coordinates = du.getFaceCoordinates(frame)
+        du.drowsy_detection(frame, rect, camera_width)
 
         # 얼굴을 detection 한 경우.
-        # case : dlib / if 조건만 다름.
         if len(bounding_box) > 0 and isContinue:
             face = du.preprocess(frame, bounding_box, FACE_SHAPE)
             input_img = np.expand_dims(face, axis=0)
@@ -71,8 +67,6 @@ def showScreenAndDetectFace(model, capture):
             if du.repeat >= 56:
                 print("Emotion : ", emotion[index])
                 cv2.putText(frame, emotion[index], (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-        # case : haar cascade / if 문 내용 위와 동일.
-        # if len(face_coordinates) is not 0 and du.checkFaceCoordinate(face_coordinates, camera_width, camera_height) and isContinue:
 
         refreshScreen(frame, bounding_box)
         key = cv2.waitKey(20)
@@ -91,12 +85,7 @@ def refreshScreen(frame, bounding_box):
         du.check_detect_area(frame)
     if isLandmark:
         du.draw_landmark(frame)
-
     du.drawFace(frame, bounding_box)
-    # case : haar cascade
-    # global camera_width, camera_height
-    # if du.checkFaceCoordinate(face_coordinates, camera_width, camera_height):
-    #     du.drawFace(frame, face_coordinates)
     cv2.imshow(windowName, frame)
 
 
