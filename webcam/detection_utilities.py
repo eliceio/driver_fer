@@ -5,6 +5,7 @@ from scipy.spatial import distance as dist
 from threading import Thread
 import playsound
 import time
+import sys
 
 # dlib을 위한 변수
 landmarks = 'shape_predictor_68_face_landmarks.dat'
@@ -108,19 +109,21 @@ repeat = 0
 Sleeping_eye = 0
 
 # 졸음이 깰때까지 webcam에 문구를 띄우기 위해 추가 된 변수
-Slow_blinking = False
 COUNTER = 0
-ALARM_ON = False
 start_time = 0
 end_time = 0
+# 알림음 시간
+ALARM_start = 0
+ALARM_end = 0
+ALARM_count = 0
 
 
 # 5초동안 사용자 눈 크기 계산
 def eye_size_cal(ear, frame, camera_width):
     global repeat, user_eye, Sleeping_eye
     user_eye += ear
-    print("ear:" + str(ear))
-    print("user : " + str(user_eye))
+    # print("ear:" + str(ear))
+    # print("user : " + str(user_eye))
 
     cv2.putText(frame, "eye size: {:.2f}".format(user_eye / (repeat - 40)), (int(camera_width * 0.7), 30),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
@@ -191,33 +194,34 @@ def sound_alarm(path):
     playsound.playsound(path)
 
 
-def warning(frame):
-    global ALARM_ON
-    # if the alarm is not on, turn it on
-    if not ALARM_ON:
-        ALARM_ON = True
-
-        t = Thread(target=sound_alarm,
-                   args=("alarm.WAV",))
-        t.deamon = True
-        t.start()
-
-    # draw an alarm on the frame
-    cv2.putText(frame, "Drowsy Warning!", (10, 30),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-
-    return ALARM_ON
+def warning(frame, sentence):
+    global ALARM_start, ALARM_count
+    t = Thread(target=sound_alarm,
+               args=("alarm.WAV",))
+    cv2.putText(frame, str(sentence), (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+    t.deamon = True
+    t.start()
+    ALARM_start = time.time()
+    ALARM_count += 1
 
 
 def drowsy_detection(frame, face, camera_width):
-    global repeat, ALARM_ON, eye_not_recognition_time, user_eye, Sleeping_eye, eye_open, COUNTER, end_time, start_time, count_drowsy_detection, Slow_blinking, TOTAL
+    global repeat, eye_not_recognition_time, user_eye, Sleeping_eye, eye_open, COUNTER, end_time, start_time, count_drowsy_detection, TOTAL, ALARM_end, ALARM_start
     repeat += 1
 
     # 눈 인식이 20초 이상 되지 않을 경우 알림 울리기
     if not face:
         eye_not_recognition_time += 1
     if eye_not_recognition_time >= 20:
-        ALARM_ON = warning(frame)
+        sentence = "Out of frame!"
+        if ALARM_count == 0:
+            warning(frame, sentence)
+        else:
+            ALARM_end = time.time()
+            temp = (ALARM_end - ALARM_start)
+            if temp > float(2.5):
+                warning(frame, sentence)
+
     if repeat <= 40:
         start(frame)
 
@@ -244,7 +248,16 @@ def drowsy_detection(frame, face, camera_width):
                 # if the eyes were closed for a sufficient number of
                 # then sound the alarm
                 if COUNTER >= EYE_AR_CONSEC_FRAMES:
-                    ALARM_ON = warning(frame)
+                    sentence = "Drowsy detection!"
+                    if ALARM_count == 0:
+                        warning(frame, sentence)
+                    else:
+                        ALARM_end = time.time()
+                        temp = (ALARM_end - ALARM_start)
+
+                        if temp > float(2.5):
+                            warning(frame, sentence)
+
 
             # otherwise, the eye aspect ratio is not below the blink
             # threshold, so reset the counter and alarm
@@ -254,25 +267,29 @@ def drowsy_detection(frame, face, camera_width):
                     print("눈 뜸 " + str(end_time - start_time))
                     if (end_time - start_time) >= float(0.4):
                         count_drowsy_detection += 1
+
                     else:
                         count_drowsy_detection = 0
                     if count_drowsy_detection >= consecutive_drowsy:
-                        if not Slow_blinking:
-                            ALARM_ON = warning(frame)
-                            Slow_blinking = True
-                    if Slow_blinking:
-                        print("slow_blink")
-                        Slow_blinking = False
+                        sentence = "The blink is slow!"
+                        if ALARM_count == 0:
+                            warning(frame, sentence)
+                        else:
+                            ALARM_end = time.time()
+                            temp = (ALARM_end - ALARM_start)
+                            if temp > float(2.5):
+                                warning(frame, sentence)
                     eye_open = True
                 if COUNTER >= consecutive_eyes_closed:
                     TOTAL += 1
                 COUNTER = 0
-                ALARM_ON = False
 
             # draw the computed eye aspect ratio on the frame to help
             cv2.putText(frame, "EAR: {:.2f}".format(ear), (int(camera_width * 0.8), 30),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+            cv2.putText(frame, "Slow blink count : " + str(count_drowsy_detection), (int(camera_width * 0.65), 50),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
 
             # 눈 깜빡인 횟수 화면 출력
-            cv2.putText(frame, "Blinks: {}".format(TOTAL), (int(camera_width * 0.8), 50),
+            cv2.putText(frame, "Blinks: {}".format(TOTAL), (int(camera_width * 0.45), 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
