@@ -16,6 +16,8 @@ from keras.models import load_model
 from keras.utils import np_utils
 from keras.utils.vis_utils import plot_model
 
+from sklearn.model_selection import train_test_split
+
 import autokeras as ak
 
 class_label = ['angry', 'disgust', 'fear','happy','sad','surprise','neutral']
@@ -24,7 +26,8 @@ n_class = len(class_label)
 path = '/python/DDSA/fer/fer2013/'
 file_name = 'fer2013_2.csv'
 
-def load_data():
+# load csv fer2013 data for FER.
+def load_csv_data():
     print("Start load_data")
     fer = pd.read_csv(path + file_name)
     fer_train = fer[fer.Usage == 'Training']
@@ -60,6 +63,39 @@ def load_data_for_ak():
 
     return x_train, x_test, y_train, y_test
 
+# selecte specific class, normalize, class distribution balance, make fake RGB channel, y to one hot encoding
+
+def data_arrange(x_data,y_data, color_ch = 3, img_size = 48):
+    # data class re-arrange
+    
+    # Angry vs neutral case
+    x_angry = x_data[y_data==0]
+    x_happy = x_data[y_data==3]
+    x_neutral = x_data[y_data==6]
+    
+    y_angry = y_data[y_data==0]
+    y_happy = y_data[y_data==3]
+    y_neutral = y_data[y_data==6]
+    
+    # number of happy samples are twice  
+    # To avoid class distribution bias. use only 50% sample of happy class
+    x_happy_use, x_no, y_happy_use, y_no = train_test_split(x_happy, y_happy, test_size = 0.5, shuffle = True, random_state=33)
+    
+    #print('Before normalize:{a}\n'.format(a= x_angry[0]))
+    xx = np.concatenate((x_angry, x_happy_use, x_neutral),axis=0)/255.0 #concatenate & normalized
+    yy = np.concatenate((y_angry, y_happy_use, y_neutral), axis=0)
+    
+    yy[yy==3]=1
+    yy[yy==6]=2
+    
+    xx = xx.reshape(-1, img_size,img_size)
+    xx = np.stack((xx,)*color_ch, -1 )  # 1 for gray, 3 for making fake RGB channel
+    yy = np_utils.to_categorical(yy, n_class)
+    print('After normalize x:{a} y:{b}\n'.format(a= xx.shape, b=yy.shape))     
+
+    return xx, yy
+
+# just simple reshape and normalize
 def normalize_x(data):
     faces = []
 
@@ -72,6 +108,7 @@ def normalize_x(data):
     faces = np.expand_dims(faces, -1)
     return faces
 
+# normalize and resize. Needs a lot of memory, space and time. But sometims (ex- ResNet transfer) we need it.
 def normalize_resize(data, target_size = 197):
     #print(np.shape(data))
     new_shape = (target_size, target_size)
@@ -180,6 +217,7 @@ def cvt_csv2face():
         cv2.imwrite(os.path.join(path, class_label[labels[i]], img_name), picture, [cv2.IMWRITE_PNG_COMPRESSION, 0])
         #params for PNG, low value means low compression, big file size.(0 to 9)
 
+# make face picture with dlib 68 face landmarks from csv fer2013 data. on-going.
 def convert_csv_to_dlib():
     print("convert csv to face dlib data start.\n")
     print('Dlib face generation start.\n')
