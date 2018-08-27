@@ -245,7 +245,7 @@ def warning(frame, sentence):
     ALARM_count += 1
 
 def drowsy_detection(frame, face):
-     global repeat, eye_not_recognition_time, user_eye, Sleeping_eye, eye_open, COUNTER, end_time, start_time, count_drowsy_detection, TOTAL, ALARM_end, ALARM_start
+    global repeat, eye_not_recognition_time, user_eye, Sleeping_eye, eye_open, COUNTER, end_time, start_time, count_drowsy_detection, TOTAL, ALARM_end, ALARM_start
     repeat += 1
 
     # 눈 인식이 20초 이상 되지 않을 경우 알림 울리기
@@ -330,6 +330,6 @@ def drowsy_detection(frame, face):
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
 
             # 눈 깜빡인 횟수 화면 출력
-            cv2.putText(frame, "Blinks: {}".format(TOTAL), (int(cam_width * 0.8), 50),
+            cv2.putText(frame, "Blinks: {}".format(TOTAL), (int(cam_width * 0.45), 50),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
