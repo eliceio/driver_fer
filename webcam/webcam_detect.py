@@ -58,7 +58,7 @@ def showScreenAndDetectFace(model, capture):
         ret, frame = capture.read()
         face_coordinates = du.dlib_face_coordinates(frame)
 
-        if isContinue and isArea:
+        if isContinue:
             detect_area_driver(frame, face_coordinates)
 
         if input_img is not None:
@@ -82,14 +82,15 @@ def showScreenAndDetectFace(model, capture):
 
 def detect_area_driver(frame, face_coordinates):
     global input_img, rect, bounding_box
-    rect, bounding_box = du.checkFaceCoordinate(face_coordinates)
+    rect, bounding_box = du.checkFaceCoordinate(face_coordinates, isArea)
     du.drowsy_detection(frame, rect)
 
     # 얼굴을 detection 한 경우.
     if bounding_box is not None and isContinue:
         face = du.preprocess(frame, bounding_box, FACE_SHAPE)
-        input_img = np.expand_dims(face, axis=0)
-        input_img = np.expand_dims(input_img, axis=-1)
+        if face is not None:
+            input_img = np.expand_dims(face, axis=0)
+            input_img = np.expand_dims(input_img, axis=-1)
 
 
 def refreshScreen(frame):
