@@ -72,8 +72,9 @@ def showScreenAndDetectFace(model, capture, emotion):  #jj_add / for different e
         if input_img is not None:
             result = model.predict(input_img)[0]
             index = int(np.argmax(result))
+            
             if du.repeat >= 56:
-                print("Emotion : ", emotion[index])
+                print("Emotion :{} / {} % ".format(emotion[index], result[index]*100))
                 cv2.putText(frame, emotion[index], (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
         refreshScreen(frame)
