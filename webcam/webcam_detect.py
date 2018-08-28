@@ -92,13 +92,14 @@ def showScreenAndDetectFace(model, capture, emotion):  #jj_add / for different e
         elif key == ord('q'):
             break
         elif key%256 == 32:  # jj_add / press space bar to save cropped gray image
+            try:
+                img_name = "cropped_gray_{}.png".format(img_counter)
 
-            img_name = "cropped_gray_{}.png".format(img_counter)
-
-            cv2.imwrite(img_name, np.squeeze(input_img))
-            print("{} written!".format(img_name))
-            img_counter += 1
-
+                cv2.imwrite(img_name, np.squeeze(input_img))
+                print("{} written!".format(img_name))
+                img_counter += 1
+            except:
+                print('Image can not be saved!')                
 
 def detect_area_driver(frame, face_coordinates):
     global input_img, rect, bounding_box
