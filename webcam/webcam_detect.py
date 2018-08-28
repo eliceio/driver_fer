@@ -95,7 +95,7 @@ def showScreenAndDetectFace(model, capture, emotion):  #jj_add / for different e
 
             img_name = "cropped_gray_{}.png".format(img_counter)
 
-            cv2.imwrite(img_name, face)
+            cv2.imwrite(img_name, np.squeeze(input_img))
             print("{} written!".format(img_name))
             img_counter += 1
 
