@@ -197,6 +197,13 @@ def load_autokeras(path='python/autokeras/'):
 
     return keras_model
 
+def gray_to_3ch(input_data):
+    temp = input_data[:,:,:]
+    for i in range(1,3):
+        input_data = np.concatenate((input_data,temp), axis=3)
+        print(i)
+    print(np.shape(input_data))
+    return input_data
 
 ## convert csv file to face picture (png / jpg)
 def cvt_csv2face():
