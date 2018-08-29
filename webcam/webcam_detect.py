@@ -7,10 +7,12 @@ sys.path.append("../")
 import model.basenet as baseNet
 import detection_utilities as du
 
+import keras
 from keras.models import load_model
+from keras.utils.generic_utils import CustomObjectScope
 
 parser = argparse.ArgumentParser(description="운전자 졸음, 난폭 운전 예방 시스템")
-parser.add_argument('model', type=str, default='basenet', choices=['ak','basenet', 'vgg16', 'resnet', 'ensemble'],
+parser.add_argument('model', type=str, default='basenet', choices=['ak','mobile','basenet', 'vgg16', 'resnet', 'ensemble'],
                     help="운전자 감정 예측을 위한 모델을 선택")
 args = parser.parse_args()
 model_name = args.model
@@ -23,6 +25,9 @@ basenet_weight_path = 'baseNet_weight.h5'
 vgg16_weight_path = 'vgg16_weight.h5'
 resnet_weight_path = 'resnet_weight.h5'
 ak_path = '../model/models/ak_3class_transfer.h5'  #jj_add / model path
+mobile_path = '../model/models/test_mobile_model.h5'  #jj_add / model path
+mobile_weight_path = '../model/models/test_mobile_weight.h5'  #jj_add / model path
+
 
 emotion_7_class = ['Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral']
 
@@ -34,7 +39,6 @@ camera_height = 0
 input_img = None
 rect = None
 bounding_box = None
-
 
 def getCameraStreaming():
     capture = cv2.VideoCapture(0)
@@ -56,7 +60,7 @@ def setDefaultCameraSetting():
 
 
 
-def showScreenAndDetectFace(model, capture, emotion):  #jj_add / for different emotion class models
+def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for different emotion class models
     global isContinue, isArea, isLandmark, input_img, rect, bounding_box
 
     img_counter = 0  # jj_add / for counting images that are saved (option)
@@ -67,7 +71,7 @@ def showScreenAndDetectFace(model, capture, emotion):  #jj_add / for different e
         face_coordinates = du.dlib_face_coordinates(frame)
 
         if isContinue:
-            detect_area_driver(frame, face_coordinates)
+            detect_area_driver(frame, face_coordinates,color_ch)
 
         if input_img is not None:
             result = model.predict(input_img)[0]
@@ -101,7 +105,7 @@ def showScreenAndDetectFace(model, capture, emotion):  #jj_add / for different e
             except:
                 print('Image can not be saved!')                
 
-def detect_area_driver(frame, face_coordinates):
+def detect_area_driver(frame, face_coordinates, color_ch=1):
     global input_img, rect, bounding_box
     rect, bounding_box = du.checkFaceCoordinate(face_coordinates, isArea)
     du.drowsy_detection(frame, rect)
@@ -111,7 +115,8 @@ def detect_area_driver(frame, face_coordinates):
         face = du.preprocess(frame, bounding_box, FACE_SHAPE)
         if face is not None:
             input_img = np.expand_dims(face, axis=0)
-            input_img = np.expand_dims(input_img, axis=-1)
+            #input_img = np.expand_dims(input_img, axis=-1)
+            input_img = np.stack((input_img,)*color_ch, -1 ) 
 
 
 def refreshScreen(frame):
@@ -138,20 +143,30 @@ def chooseWeight(model_name):
     elif model_name=='ak':
         emotion=['Angry','Happy','Neutral']  ## jj_add /  3 emotion classes for ak net. return path and emotion classes
         return ak_path, emotion
+    elif model_name=='mobile':
+        emotion=['Angry','Happy','Neutral']  ## jj_add /  3 emotion classes for ak net. return path and emotion classes
+        return [mobile_path, mobile_weight_path], emotion
+        
 
 
 def main():
     print("Start main() function.")
     model_weight_path, emotion = chooseWeight(model_name)
-
+    color_ch =1  # default for gray
+    
     if model_name =='ak':   ## jj_add /  if model name is ak, than just load_model (without compile?)
         model = load_model(model_weight_path)
+    elif model_name =='mobile':
+        with CustomObjectScope({'relu6': keras.layers.ReLU(6.),'DepthwiseConv2D': keras.layers.DepthwiseConv2D}):
+            model = load_model(model_weight_path[0])
+        model.load_weights(model_weight_path[1])
+        color_ch = 3
     else:
         model = buildNet(model_weight_path)
 
     capture = getCameraStreaming()
     setDefaultCameraSetting()
-    showScreenAndDetectFace(model, capture, emotion)  #jj_add / for different emotion class models
+    showScreenAndDetectFace(model, capture, emotion, color_ch)  #jj_add / for different emotion class models
 
 
 if __name__ == '__main__':
