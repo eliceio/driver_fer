@@ -76,10 +76,12 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
         if input_img is not None:
             result = model.predict(input_img)[0]
             index = int(np.argmax(result))
-            
+
             if du.repeat >= 56:
-                print("Emotion :{} / {} % ".format(emotion[index], result[index]*100))
-                cv2.putText(frame, emotion[index], (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                for i in range(len(emotion)):
+                    print("Emotion :{} / {} % ".format(emotion[i], round(result[i]*100, 2)))
+                    cv2.putText(frame, "{}: {}% ".format(emotion[i], round(result[i]*100, 2)), (5, 20+(i*20)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                cv2.putText(frame, "Driver emotion: {}".format(emotion[index]), (5, 20+(20*len(emotion))), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
         refreshScreen(frame)
         key = cv2.waitKey(20)
@@ -103,7 +105,7 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
                 print("{} written!".format(img_name))
                 img_counter += 1
             except:
-                print('Image can not be saved!')                
+                print('Image can not be saved!')
 
 def detect_area_driver(frame, face_coordinates, color_ch=1):
     global input_img, rect, bounding_box
@@ -116,7 +118,7 @@ def detect_area_driver(frame, face_coordinates, color_ch=1):
         if face is not None:
             input_img = np.expand_dims(face, axis=0)
             #input_img = np.expand_dims(input_img, axis=-1)
-            input_img = np.stack((input_img,)*color_ch, -1 ) 
+            input_img = np.stack((input_img,)*color_ch, -1 )
 
 
 def refreshScreen(frame):
@@ -146,14 +148,14 @@ def chooseWeight(model_name):
     elif model_name=='mobile':
         emotion=['Angry','Happy','Neutral']  ## jj_add /  3 emotion classes for ak net. return path and emotion classes
         return [mobile_path, mobile_weight_path], emotion
-        
+
 
 
 def main():
     print("Start main() function.")
     model_weight_path, emotion = chooseWeight(model_name)
     color_ch =1  # default for gray
-    
+
     if model_name =='ak':   ## jj_add /  if model name is ak, than just load_model (without compile?)
         model = load_model(model_weight_path)
     elif model_name =='mobile':
