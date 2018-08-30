@@ -13,6 +13,7 @@ import pandas as pd
 import cv2
 
 from sklearn.metrics import confusion_matrix #classification_report
+from sklearn.metrics import classification_report
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, Dropout, Activation
@@ -50,13 +51,24 @@ batch_size = 16
 ########################### You have to designate the location
 
 your_name = 'jungjoon' # your data folder
-fer_ck_path = '/data/'  # location of x_data, y_data
+fer_ck_path = '../data/'  # location of x_data, y_data
 
 #############
 data_path = '../data/'+your_name+'/'
 model_path = '../model/models/test_mobile_model.h5'  # location
 
 #os.chdir('/github/drive_fer/webcam/')
+
+
+def classification_score(model, x, y):
+    predicted = model.predict(x)
+
+    pred_list = []; actual_list = []
+    for i in predicted:
+        pred_list.append(np.argmax(i))
+    for i in y:
+        actual_list.append(np.argmax(i))
+    return classification_report(actual_list, pred_list, target_names=class_label)
 
 
 def plot_hist(hist):
@@ -184,6 +196,8 @@ if __name__ =="__main__":
     loaded_model.compile(loss = categorical_crossentropy,
                       optimizer = Adam(lr = 0.001, beta_1 = 0.9, beta_2 = 0.999, epsilon = 1e-7),
                       metrics = ['accuracy'])
+
+    print(classification_score(loaded_model, x_test, y_test))
 
     print('\n############### Confusion matrix result preparing... ########\n')
     
