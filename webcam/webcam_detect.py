@@ -79,9 +79,11 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
 
             if du.repeat >= 56:
                 for i in range(len(emotion)):
-                    print("Emotion :{} / {} % ".format(emotion[i], round(result[i]*100, 2)))
+                    #print("Emotion :{} / {} % ".format(emotion[i], round(result[i]*100, 2)))
                     cv2.putText(frame, "{}: {}% ".format(emotion[i], round(result[i]*100, 2)), (5, 20+(i*20)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                 cv2.putText(frame, "Driver emotion: {}".format(emotion[index]), (5, 20+(20*len(emotion))), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                du.add_driver_emotion(index)
+                du.check_driver_emotion(frame)
 
         refreshScreen(frame)
         key = cv2.waitKey(20)
@@ -114,6 +116,7 @@ def detect_area_driver(frame, face_coordinates, color_ch=1):
 
     # 얼굴을 detection 한 경우.
     if bounding_box is not None and isContinue:
+        #du.drowsy_detection(frame, rect)
         face = du.preprocess(frame, bounding_box, FACE_SHAPE)
         if face is not None:
             input_img = np.expand_dims(face, axis=0)
