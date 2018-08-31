@@ -149,7 +149,7 @@ def chooseWeight(model_name):
         emotion=['Angry','Happy','Neutral']  ## jj_add /  3 emotion classes for ak net. return path and emotion classes
         return ak_path, emotion
     elif model_name=='mobile':
-        emotion=['Angry','Happy','Neutral']  ## jj_add /  3 emotion classes for ak net. return path and emotion classes
+        emotion=['Angry','Happy','Neutral'] 
         return [mobile_path, mobile_weight_path], emotion
 
 
