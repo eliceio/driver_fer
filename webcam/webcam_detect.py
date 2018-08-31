@@ -105,6 +105,8 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
             du.expend_detect_area()
         elif key == ord('p'):
             du.reduce_detect_area()
+        elif key == ord('r'):
+            du.reset_global_value()
         elif key == ord('q'):
             break
         elif key%256 == 32:  # jj_add / press space bar to save cropped gray image
@@ -158,7 +160,7 @@ def chooseWeight(model_name):
         emotion=['Angry','Happy','Neutral']  ## jj_add /  3 emotion classes for ak net. return path and emotion classes
         return ak_path, emotion
     elif model_name=='mobile':
-        emotion=['Angry','Happy','Neutral'] 
+        emotion=['Angry','Happy','Neutral']
         return [mobile_path, mobile_weight_path], emotion
 
 
