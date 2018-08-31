@@ -122,6 +122,7 @@ def detect_area_driver(frame, face_coordinates, color_ch=1):
             input_img = np.expand_dims(face, axis=0)
             #input_img = np.expand_dims(input_img, axis=-1)
             input_img = np.stack((input_img,)*color_ch, -1 )
+            #print(np.mean(input_img))
 
 
 def refreshScreen(frame):
