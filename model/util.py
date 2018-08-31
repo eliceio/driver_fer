@@ -1,16 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Aug 21 18:46:07 2018
+Created on Thu Aug 30 22:14:52 2018
 
-@author: 2014_Joon_IBS
+@author: 2014_Joon
 """
 
 import numpy as np
 #np.seterr(divide='ignore', invalid='ignore')  #ignore divide by zero or non
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-from skimage.measure import label, regionprops
-#import scipy
+
 from scipy import ndimage
 
 from sklearn.metrics import confusion_matrix #classification_report
@@ -23,16 +21,12 @@ import cv2
 #from tensorflow.python.framework import ops
 
 from sklearn.model_selection import train_test_split
-
 import dlib
-from PIL import Image as pil_image
 
 import os
 import glob
 import numpy as np
 import pandas as pd
-
-from sklearn.metrics import confusion_matrix #classification_report
 
 from keras import backend as K
 import keras
@@ -45,15 +39,19 @@ from keras.models import model_from_json
 from keras.models import load_model
 from keras.utils.generic_utils import CustomObjectScope
 
+clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))       
+
 K.set_learning_phase(False)
 
 class_label = ['angry', 'happy', 'neutral']
 n_class = len(class_label)
 img_size = 48
+
+data_path = '../data'
 # to match the size, dimension, and color channel.
 
 #landmarks = 'shape_predictor_68_face_landmarks.dat'
-print("[INFO] loading facial landmark predictor...")
+
 detector = dlib.get_frontal_face_detector()
 #predictor = dlib.shape_predictor(landmarks)
 
