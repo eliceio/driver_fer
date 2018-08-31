@@ -123,24 +123,25 @@ def show_and_save_best_model(clf, model_name = 'ak_2_1'):
 
 
 if __name__ == '__main__':
-    os.chdir('f:/python/autokeras/') # change directory
+    os.chdir('/python/autokeras/') # change directory
     #print(os.getcwd())
     #x_train, x_test, y_train, y_test = load_data()
     
     # 1. data load
-    x_data = np.load('../x_data.npy')
-    y_data = np.load('../y_data.npy')
+    print('\n#####################\nload data\n')
+    x_data = np.load('./x_data_7.npy')  # 7 means total 7 members, not 7 emotion classes :)
+    y_data = np.load('./y_data_7.npy')
     
-    # 2. arrange the data. shape change, use specific class only, ...
-    x_new, y_new = data_arrange(x_data, y_data)
-
-    class_dist = [len(y_new[y_new==i]) for i, c in enumerate(class_label)] 
+    x_data = x_data.reshape(-1, 48,48,1)
+    
+    class_dist = [len(y_data[y_data==i]) for i, c in enumerate(class_label)] 
+    
     print('\nClass distribution:{0}\n'.format(class_dist))
     # train +val / test set split 
-    x_train, x_test, y_train, y_test = train_test_split(x_new, y_new, test_size = 0.2, shuffle = True, random_state=33)
+    x_train, x_test, y_train, y_test = train_test_split(x_data, y_data, test_size = 0.2, shuffle = True, random_state=33)
     
     # Autokeras fit start.
-    clf = model_fit(x_train, y_train, resume=True, iter_num=5, time_limit=6)
-    
+    clf = model_fit(x_train, y_train, resume=True, iter_num=10, time_limit=12)
+    print('\nFinal fit start.\n')
     final_fit(clf, x_train, y_train, x_test, y_test)
-    show_and_save_best_model(clf)
+    show_and_save_best_model(clf, model_name='ak_7.h5')
