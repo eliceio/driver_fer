@@ -79,29 +79,16 @@ def preprocess(img, face_coordinates, face_shape=(48, 48)):
     cv2.imwrite('./cropped.png', face_gray, params=[cv2.IMWRITE_PNG_COMPRESSION, 0])
     return face_gray
 
-def preprocess_for_grad_CAM(img_path, color_ch = 1):
+def preprocess_for_grad_CAM(img_arr, color_ch = 1):
     
-    #img = pil_image.open(img_path)
-    
-    img = cv2.imread(img_path)
-    #face_coordinate = dlib_face_coordinates(img)
-    #img = preprocess(img, face_coordinate)
-    
-    img = cv2.resize(img, (48, 48))
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)           
-    
-    img_arr = np.asarray(img) / 255.  #normalize
     img_tensor = np.expand_dims(img_arr, 0)
-    #img_tensor = np.expand_dims(img_tensor, 3)    
     img_tensor = np.stack((img_tensor,)*color_ch, -1 )  # to make fake RGB channel, color_ch =3, or 1 for gray
     print(img_tensor.shape)
     print(img_arr.shape)
     
     return img_arr, img_tensor
 
-def grad_cam(model, img_arr, img_tensor, class_idx, layer_idx):
-
-    
+def grad_cam(model, img_arr, img_tensor, class_idx, layer_idx):  
 
     y_c = model.layers[-1].output.op.inputs[0][0, class_idx]  # final layer (before softmax)
     layer_output = model.layers[layer_idx].output  # pick specific layer output (caution: conv layer only)
@@ -122,19 +109,23 @@ def grad_cam(model, img_arr, img_tensor, class_idx, layer_idx):
     
     return cam, predictions
 
-def plot_grad_cam(model, img, pred_class=2, layer_idx = -3, n_layer =1, color_ch = 1):
+def plot_grad_cam(model, img, pred_class, layer_idx = -3, n_layer =1, color_ch = 1):
     
     img_arr, img_tensor = preprocess_for_grad_CAM(img, color_ch)
             
     #pred_class = np.argmax(model.predict(img))
-   
-    
-    n_row = 2
-    fig, axes = plt.subplots(n_row ,int(n_layer/n_row))#, figsize=(10, 15))
+    n_row = int(1/3*n_layer)
+    if n_layer%3 !=0:
+        
+        n_col = int(n_layer/n_row+1)
+    else:
+        n_col = int(n_layer/n_row)
+        
+    fig, axes = plt.subplots(n_row ,n_col, figsize=(10, 15))
     axes = axes.flatten()
     #for i in range(n_layer):
     
-#top3 = np.argpartition(pred_values, -3)[-3:]  #top 4
+    #top3 = np.argpartition(pred_values, -3)[-3:]  #top 4
     if n_layer >1:
         for i in range(n_layer):
             cam, predictions = grad_cam(model, img_arr, img_tensor,  pred_class, layer_idx-i) #in case of model class, model.model
@@ -155,7 +146,7 @@ def plot_grad_cam(model, img, pred_class=2, layer_idx = -3, n_layer =1, color_ch
         
         pred_values = np.squeeze(predictions, 0)
         top1 = np.argmax(pred_values)
-        top1_value = np.round(float(pred_values[top1]*100), decimals = 4)
+        #top1_value = np.round(float(pred_values[top1]*100), decimals = 4)
         #axes[0].imshow(img_arr, cmap = 'gray')
         axes[0].imshow(img_arr, cmap = 'gray')
         axes[0].imshow(cam, cmap = 'jet', alpha = 0.5)
@@ -168,7 +159,8 @@ def plot_grad_cam(model, img, pred_class=2, layer_idx = -3, n_layer =1, color_ch
     fig.tight_layout()
     fig.show()
     
-    fig.savefig('gradCAM'+class_label[pred_class]+'.png',bbox_inches='tight',dpi=100)
+    fig.savefig('gradCAM'+class_label[pred_class]+'.png',bbox_inches='tight',dpi=300)
+    print(class_label[pred_class])
     
 
  # ex) img, cam, predictions = grad_cam(ak_net_0, img_path, class_idx, -13)
