@@ -334,12 +334,10 @@ if __name__ == "__main__":
 #        plot_samples_from_path(class_idx=i)
    
     #x,y = load_img_save_npy(data_path)
-    
-    
-    os.chdir('./models/')
+            
     print("===============================================================")
     plt.close()
-    loaded_model = load_model('ak7_16.h5')    
+    loaded_model = load_model('./models/ak7_16.h5')    
     
 #    #### transfer mobiel net model
 #    model_path = 'test_mobile_model'
