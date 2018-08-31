@@ -7,6 +7,8 @@ import playsound
 import time
 import sys
 
+clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+
 # dlib을 위한 변수
 landmarks = '../model/shape_predictor_68_face_landmarks.dat'  # jj_modify for relative path to the dat
 print("[INFO] loading facial landmark predictor...")
@@ -29,6 +31,7 @@ emotion_list = []
 
 def dlib_face_coordinates(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    gray = clahe.apply(gray)
     return detector(gray, 0)
 
 
