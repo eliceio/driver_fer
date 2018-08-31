@@ -24,7 +24,7 @@ basenet_weight_path = 'baseNet_weight.h5'
 # 이런 식으로 나중에 변경.
 vgg16_weight_path = 'vgg16_weight.h5'
 resnet_weight_path = 'resnet_weight.h5'
-ak_path = '../model/models/ak_3class_transfer.h5'  #jj_add / model path
+ak_path = '../model/models/ak101.h5'  #jj_add / model path
 mobile_path = '../model/models/test_mobile_model.h5'  #jj_add / model path
 mobile_weight_path = '../model/models/test_mobile_weight.h5'  #jj_add / model path
 
