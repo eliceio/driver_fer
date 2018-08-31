@@ -164,11 +164,37 @@ def plot_grad_cam(model, img, pred_class, layer_idx = -3, n_layer =1, color_ch =
     
 
  # ex) img, cam, predictions = grad_cam(ak_net_0, img_path, class_idx, -13)
+def load_sample_img(data_path):
+    
+    split_label = ['train','validation','test']
+    class_label = ['angry', 'happy','neutral']
+    
+    list_dir = os.listdir(data_path)
+    
+    np.random.shuffle(list_dir)
+    path_test = os.path.join(data_path, list_dir[0],split_label[2])
+    print('\nRandom selection\n Subject:'+list_dir[0])
+    
+    samples =[]
+    
+    for i, i_dir in enumerate(class_label):
+        path_class = os.path.join(path_test,i_dir)
+        print('\nRandom selection from:'+ path_class)
+        files = glob.glob(path_class+'/*.png')
+        np.random.shuffle(files)
+    
+        img = preprocess_img(files[0])
+        
+        samples.append(img)
+    return samples
+
 def preprocess_img(img_path):
     img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)  #load img as grayscale
     img = clahe.apply(img)  # histogram equalization
     img = np.array(img)/255.  # normalize
     return img
+
+
 def load_img_save_npy(data_path):
     
     split_label = ['test','train','validation']
@@ -200,6 +226,56 @@ def load_img_save_npy(data_path):
     np.save('y_data_7.npy', y)
                     
     return x, y
+                
+
+def plot_samples_from_path(data_path='/github/fer/data', class_idx=0):
+    
+    split_label = ['train','validation','test']
+    class_label = ['angry', 'happy','neutral']
+ 
+    path_test = os.path.join(data_path, split_label[2])
+    #class_list_dir = os.listdir(path_test)
+   
+    path_class = os.path.join(path_test, class_label[0]) ####### 0: neutral 1: happy 2: angry
+    files = glob.glob(path_class+'/*.png')
+    #random.shuffle(files)
+    #print(path_class)
+    
+    # temporary for test
+    path_npy = '/python/autokeras/'
+    os.chdir(path_npy)
+    x = np.load('x_data_7.npy')
+    y = np.load('y_data_7.npy')
+    
+    
+    files = x[y==class_idx]
+    np.random.shuffle(files)
+    
+    #files = files[0:100]
+    n_fig = len(files)
+    print(n_fig)
+    
+    n_row = int(np.sqrt(n_fig))
+    n_col = int(n_fig/n_row)+1
+    fig, axes = plt.subplots(n_row ,n_col)#, figsize=(10, 15))
+    axes = axes.flatten()
+    
+    n_diff = n_row*n_col-n_fig
+        
+    for i, file in enumerate(files):
+        #img = preprocess_img(file)
+        
+        axes[i].imshow(file, cmap = 'gray')
+        axes[i].axis('off')
+    for j in range(n_diff):
+        axes[n_fig+j].axis('off')
+    
+        
+    #axes[0].set_title("Class:{}".format(layer_idx_), fontsize=10)    
+    fig.show()
+    fig.savefig('total_'+class_label[class_idx]+'.png',bbox_inches='tight',dpi=300) 
+    return 
+
 
 def plot_confusion_matrix(cm, classes,
                           normalize = False,
