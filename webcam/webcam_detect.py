@@ -11,14 +11,23 @@ import keras
 from keras.models import load_model
 from keras.utils.generic_utils import CustomObjectScope
 
+import os
+import glob
+
 parser = argparse.ArgumentParser(description="운전자 졸음, 난폭 운전 예방 시스템")
-parser.add_argument('model', type=str, default='basenet', choices=['ak','mobile','basenet', 'vgg16', 'resnet', 'ensemble'],
+parser.add_argument('model', type=str, default='ak', choices=['ak','mobile','basenet', 'vgg16', 'resnet', 'ensemble'],
                     help="운전자 감정 예측을 위한 모델을 선택")
 args = parser.parse_args()
 model_name = args.model
 
 windowName = 'Webcam Screen'
 FACE_SHAPE = (48, 48)
+
+#### model list
+
+#model_list = os.listdir('../model/models')
+model_list = glob.glob('../model/models/*.h5')
+print('\n'+model_list+'\n')  # model list preparation
 
 basenet_weight_path = 'baseNet_weight.h5'
 # 이런 식으로 나중에 변경.
@@ -27,7 +36,6 @@ resnet_weight_path = 'resnet_weight.h5'
 ak_path = '../model/models/ak101.h5'  #jj_add / model path
 mobile_path = '../model/models/test_mobile_model.h5'  #jj_add / model path
 mobile_weight_path = '../model/models/test_mobile_weight.h5'  #jj_add / model path
-
 
 emotion_7_class = ['Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neutral']
 
