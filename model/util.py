@@ -164,6 +164,37 @@ def plot_grad_cam(model, img, pred_class, layer_idx = -3, n_layer =1, color_ch =
     
 
  # ex) img, cam, predictions = grad_cam(ak_net_0, img_path, class_idx, -13)
+def load_img_save_npy(data_path):
+    
+    split_label = ['test','train','validation']
+    class_label = ['angry', 'happy','neutral']
+    
+    x = []
+    y = []
+    
+    list_dir = os.listdir(data_path)
+    for i, i_name in enumerate(list_dir):
+        print(i_name+'\n')
+        name_path = os.path.join(data_path,i_name)
+        for j, j_split in enumerate(split_label):
+            split_path = os.path.join(name_path, j_split)
+            for k, k_class in enumerate(class_label):
+                final_path = os.path.join(split_path, k_class)
+                files = glob.glob(final_path+'/*.png')
+                for file in files:
+                    img = preprocess_img(file)
+                    x.append(img)
+                    y.append([k, j, i])  # class, split, subject
+                    
+    x=np.array(x)
+    y=np.array(y)
+    y=y[:,0]
+    print(x.shape)
+    print(y.shape)
+    np.save('x_data_7.npy', x)
+    np.save('y_data_7.npy', y)
+                    
+    return x, y
 
 def plot_confusion_matrix(cm, classes,
                           normalize = False,
