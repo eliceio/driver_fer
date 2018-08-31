@@ -7,7 +7,7 @@ import playsound
 import time
 import sys
 
-clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
 
 # dlib을 위한 변수
 landmarks = '../model/shape_predictor_68_face_landmarks.dat'  # jj_modify for relative path to the dat
@@ -28,6 +28,7 @@ min_x, max_x, min_y, max_y = 0, 0, 0, 0
 (rStart, rEnd) = face_utils.FACIAL_LANDMARKS_68_IDXS["right_eye"]
 
 emotion_list = []
+
 
 def dlib_face_coordinates(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -64,7 +65,7 @@ def preprocess(img, face_coordinates, face_shape=(48, 48)):
     if face is not None:
         face_resize = cv2.resize(face, face_shape)
         face_gray = cv2.cvtColor(face_resize, cv2.COLOR_BGR2GRAY)
-        face_gray = clahe.apply(face_gray)/255.
+        face_gray = clahe.apply(face_gray) / 255.
         cv2.imwrite('./123.png', face_gray, params=[cv2.IMWRITE_PNG_COMPRESSION, 0])
         return face_gray
     else:
@@ -132,6 +133,7 @@ def checkFaceCoordinate(face_coordinates, in_area=True):
             return face, (x, y, w, h)
     return None, None
 
+
 def add_driver_emotion(idx_emotion):
     global emotion_list
     # emotion_list에 감정 저장.
@@ -141,12 +143,14 @@ def add_driver_emotion(idx_emotion):
         del emotion_list[0]
         emotion_list.append(idx_emotion)
 
+
 def check_driver_emotion(frame):
     if len(emotion_list) == 10:
         count = emotion_list.count(0)
         if count > 5:
             sentence = "Angry detection!"
-            cv2.putText(frame, str(sentence), (int(cam_width*0.3), int(cam_height*0.9)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+            cv2.putText(frame, str(sentence), (int(cam_width * 0.3), int(cam_height * 0.9)), cv2.FONT_HERSHEY_SIMPLEX,
+                        0.7, (0, 0, 255), 2)
             if ALARM_count == 0:
                 warning(frame)
             else:
@@ -185,6 +189,32 @@ end_time = 0
 ALARM_start = 0
 ALARM_end = 0
 ALARM_count = 0
+
+
+def reset_global_value():
+    global EYE_AR_CONSEC_FRAMES, consecutive_eyes_closed, TOTAL, eye_open, \
+        count_drowsy_detection, consecutive_drowsy, eye_not_recognition_time, \
+        user_eye, repeat, Sleeping_eye, COUNTER, start_time, end_time, ALARM_start, ALARM_end, ALARM_count
+    EYE_AR_CONSEC_FRAMES = 15
+    consecutive_eyes_closed = 1
+
+    TOTAL = 0
+    eye_open = True
+    count_drowsy_detection = 0  # 횟수 저장
+    consecutive_drowsy = 4  # 기준이 되는 횟수
+
+    eye_not_recognition_time = 0
+
+    user_eye = 0
+    repeat = 0
+    Sleeping_eye = 0
+
+    COUNTER = 0
+    start_time = 0
+    end_time = 0
+    ALARM_start = 0
+    ALARM_end = 0
+    ALARM_count = 0
 
 
 # 5초동안 사용자 눈 크기 계산
@@ -271,6 +301,7 @@ def warning(frame):
     ALARM_start = time.time()
     ALARM_count += 1
 
+
 def drowsy_detection(frame, face):
     global repeat, eye_not_recognition_time, user_eye, Sleeping_eye, eye_open, COUNTER, end_time, start_time, count_drowsy_detection, TOTAL, ALARM_end, ALARM_start
     repeat += 1
@@ -280,7 +311,8 @@ def drowsy_detection(frame, face):
         eye_not_recognition_time += 1
     if eye_not_recognition_time >= 20:
         sentence = "Out of frame!"
-        cv2.putText(frame, str(sentence), (int(cam_width*0.4), int(cam_height*0.9)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        cv2.putText(frame, str(sentence), (int(cam_width * 0.4), int(cam_height * 0.9)), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
+                    (0, 0, 255), 2)
         if ALARM_count == 0:
             warning(frame)
         else:
@@ -316,7 +348,8 @@ def drowsy_detection(frame, face):
                 # then sound the alarm
                 if COUNTER >= EYE_AR_CONSEC_FRAMES:
                     sentence = "Drowsy detection!"
-                    cv2.putText(frame, str(sentence), (int(cam_width*0.3), int(cam_height*0.9)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                    cv2.putText(frame, str(sentence), (int(cam_width * 0.3), int(cam_height * 0.9)),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                     if ALARM_count == 0:
                         warning(frame)
                     else:
@@ -339,7 +372,8 @@ def drowsy_detection(frame, face):
                         count_drowsy_detection = 0
                     if count_drowsy_detection >= consecutive_drowsy:
                         sentence = "The blink is slow!"
-                        cv2.putText(frame, str(sentence), (int(cam_width*0.3), int(cam_height*0.9)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                        cv2.putText(frame, str(sentence), (int(cam_width * 0.3), int(cam_height * 0.9)),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                         if ALARM_count == 0:
                             warning(frame)
                         else:
