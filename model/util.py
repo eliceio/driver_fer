@@ -164,6 +164,11 @@ def plot_grad_cam(model, img, pred_class, layer_idx = -3, n_layer =1, color_ch =
     
 
  # ex) img, cam, predictions = grad_cam(ak_net_0, img_path, class_idx, -13)
+def preprocess_img(img_path):
+    img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)  #load img as grayscale
+    img = clahe.apply(img)  # histogram equalization
+    img = np.array(img)/255.  # normalize
+    return img
 def load_img_save_npy(data_path):
     
     split_label = ['test','train','validation']
