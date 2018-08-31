@@ -324,32 +324,32 @@ def make_confusion_matrix(model, x, y, normalize = True):
     
 # ex) confusion_result = make_confusion_matrix(loaded_model, x_test, y_test, False)
 
-
-
 if __name__ == "__main__":
     #os.chdir('/github')
-    os.chdir('/python/models')
+    #os.chdir('./models/')
+    
+#    ## for whole data plot
+#    data_path = '/github/fer/data'
+#    for i in range(3):
+#        plot_samples_from_path(class_idx=i)
+   
+    #x,y = load_img_save_npy(data_path)
+    
+    
+    os.chdir('./models/')
     print("===============================================================")
     plt.close()
-    #loaded_model = load_model('ak_3class_transfer.h5')    
+    loaded_model = load_model('ak7_16.h5')    
     
-    #### transfer mobiel net model
-    model_path = 'transfer_model_20'
-    mobile_weight_path = 'cam_model_weight'
-    
-    with CustomObjectScope({'relu6': keras.layers.ReLU(6.),'DepthwiseConv2D': keras.layers.DepthwiseConv2D}):
-        loaded_model = load_model(model_path+'.h5')  
-    
-    loaded_model.load_weights(mobile_weight_path+'.h5')  
-    
-    #######
-    
-    os.chdir('/python/data')    
-    
-    img_path = 'angry.jpg'
-    img_path1 = 'happy.jpg'
-    img_path2 = 'neutral.jpg'
-    
+#    #### transfer mobiel net model
+#    model_path = 'test_mobile_model'
+#    mobile_weight_path = 'test_mobile_weight'
+#    
+##    with CustomObjectScope({'relu6': keras.layers.ReLU(6.),'DepthwiseConv2D': keras.layers.DepthwiseConv2D}):
+##        loaded_model = load_model(model_path+'.h5')  
+##    
+##    loaded_model.load_weights(mobile_weight_path+'.h5')  
+##    
     loaded_model.compile(loss = categorical_crossentropy,
               optimizer=Adam(lr = 0.001, beta_1 = 0.9, beta_2 = 0.999, epsilon = 1e-7),
               metrics=['accuracy'])
@@ -357,10 +357,15 @@ if __name__ == "__main__":
     total_layer = len(loaded_model.layers)
     print('Total Layer:{}'.format(total_layer))
     
-    n_layer = 2
-    layer_idx = -9  # investigate layer start from ..
-    color_ch = 3    # 1 for gray, 3 for model use RGB 
-    plot_grad_cam(loaded_model, img_path, pred_class=0, layer_idx = layer_idx, n_layer=n_layer, color_ch = color_ch)
-    plot_grad_cam(loaded_model, img_path1, pred_class=1, layer_idx = layer_idx, n_layer=n_layer, color_ch = color_ch)
-    plot_grad_cam(loaded_model, img_path2, pred_class=2, layer_idx = layer_idx, n_layer=n_layer, color_ch = color_ch)
+    #######
+    samples = load_sample_img(data_path)
+    
+    n_layer = 15
+    layer_idx = -4  # investigate layer start from ..
+    color_ch = 1    # 1 for gray, 3 for model use RGB 
+    print(len(samples))
+    for i, sample in enumerate(samples):
+        plot_grad_cam(loaded_model, sample, pred_class=i, layer_idx = layer_idx, n_layer=n_layer, color_ch = color_ch)
+        
+
 
