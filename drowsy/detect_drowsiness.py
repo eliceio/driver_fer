@@ -238,15 +238,10 @@ def drowsy_detection(vs):
 
 if __name__ == '__main__':
     # 인자값, default로 설정 완료
-
-
     print("[INFO] starting video stream thread...")
     vs = VideoStream(src=args["webcam"]).start()
     time.sleep(1.0)
-
     drowsy_detection(vs)
-
-
     # do a bit of cleanup
     vs.stop()
 
