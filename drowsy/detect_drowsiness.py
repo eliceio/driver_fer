@@ -6,7 +6,6 @@ import numpy as np
 import playsound
 import argparse
 import imutils
-import time
 import dlib
 import cv2
 import time
@@ -144,8 +143,6 @@ def defalut(vs,cv2):
     frame = imutils.resize(frame, width=450)
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     cv2.rectangle(frame, (130, 80), (330, 280), (255, 0, 0), 3)
-
-    # detect faces in the grayscale frame
 
     return frame,gray
 
