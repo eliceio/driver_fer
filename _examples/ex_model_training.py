@@ -39,11 +39,15 @@ from PIL import Image as pil_image
 from keras import backend as K
 
 #path = '/python/DDSA/fer/fer2013/'
-path = './'  # path of the csv file
-file_name = 'fer2013_2.csv'
+path = '/data/'  # path of the csv file
+file_name = 'fer2013_processed.csv'
 class_label = ['angry', 'disgust', 'fear','happy','sad','surprise','neutral']
 n_class =len(class_label)
 img_size = 48  #pixel size of the data input
+os.chdir(path)
+epoch = 2 # epoch means entire data set. if we set 100 as an epoch, entire data set will be trained (by batch) 100 times.
+# due to the slow speed, default setting is 2. you can increase if you have GPU.
+    
 
 # load data from csv
 
@@ -130,8 +134,8 @@ def plot_hist(hist):
     acc_ax.legend(loc='lower left')
 
     plt.show()
-    plt.savefig('loss_accuracy_plot')
-    plt.close()
+    fig.savefig('loss_accuracy_plot')
+    
 
 # Make and plot confusion matrix. To see the detailed imformation about TP, TN of each classes.    
 def make_confusion_matrix(model, x, y, normalize = True):
@@ -178,63 +182,8 @@ def plot_confusion_matrix(cm, classes,
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
     plt.savefig('Confusion_matrix')
-    plt.close()
+ 
 
-# preprocess for gradCAM
-def preprocess(img_path):
-    
-    img = pil_image.open(img_path)
-    img = img.resize((img_size, img_size))
-    img_arr = np.asarray(img) / 255.
-    img_tensor = np.expand_dims(img_arr, 0)
-    img_tensor = np.expand_dims(img_tensor, 3)    
-    
-    return img_arr, img_tensor
-#
-#
-def grad_cam(model, img_path, class_idx, layer_idx):
-
-    img_arr, img_tensor = preprocess(img_path)
-
-    y_c = model.layers[-1].output.op.inputs[0][0, class_idx]  # final layer (before softmax)
-    layer_output = model.layers[layer_idx].output  # pick specific layer output (caution: conv layer only)
-    
-    grad = K.gradients(y_c, layer_output)[0]  # calculate gradient of y_c w.r.t. A_k from the conv layer output
-    gradient_fn = K.function([model.input], [layer_output, grad, model.layers[-1].output])
-    
-    conv_output, grad_val, predictions = gradient_fn([img_tensor])
-    conv_output, grad_val = conv_output[0], grad_val[0]
-    
-    weights = np.mean(grad_val, axis=(0, 1))
-    cam = np.dot(conv_output, weights)
-    cam = cv2.resize(cam, (img_size, img_size))
-    
-    # relu 
-    cam = np.maximum(cam, 0)    
-    cam = cam / cam.max()
-    
-    return img_arr, cam, predictions
-    
-        
-def plot_grad_cam(model, img, layer_idx = -5):
-        
-    img = np.expand_dims(img, 0)
-    #pred_class = np.argmax(model.predict(img))
-    pred_class = 1
-    plt.figure(2)
-    fig, axes = plt.subplots(1, 2, figsize=(30, 24))
-    img, cam, predictions = grad_cam(model.model, img, pred_class, layer_idx) #in case of model class, model.model
-        
-    pred_values = np.squeeze(predictions, 0)
-    top1 = np.argmax(pred_values)
-    top1_value = np.round(float(pred_values[top1]*100), decimals = 4)
-    top4 = np.argpartition(pred_values, -4)[-4:]  #top 4
-    
-    axes[0, 0].set_title("Pred:{}{}%\n True:{}\n{}".format(class_label[top1], top1_value, class_label[pred_class], top4 ), fontsize=10)
-    axes[0, 0].imshow(img,cmap = 'gray')
-    axes[0, 1].imshow(img,cmap = 'gray')
-    axes[0, 1].imshow(cam, cmap = 'jet', alpha = 0.5)
-    
 #    
 class BaseNet:
     def __init__(self, weights_file=None):
@@ -277,14 +226,14 @@ class BaseNet:
         hist = self.model.fit(x_train, y_train, 
                               validation_split = 0.2, 
                               shuffle = True, 
-                              batch_size = 16, epochs = epochs, verbose = 1, 
+                              batch_size = 32, epochs = epochs, verbose = 1, 
                               callbacks = [early_stopping] )
         return hist
     
     # evaluate the trained model / weight using test data (not training data)
     def evaluate(self, x_test, y_test):
         print("evaluate test.")
-        scores = self.model.evaluate(x_test, y_test, batch_size = 16)
+        scores = self.model.evaluate(x_test, y_test, batch_size = 32)
         print("Loss:", scores[0])
         print("Accuracy:", scores[1])
         return scores
@@ -301,10 +250,8 @@ if __name__ == "__main__":
     
     print("loading datasets")
     x_train, x_test, y_train, y_test = load_data()
-
     
-    epoch = 2  # epoch means entire data set. if we set 100 as an epoch, entire data set will be trained (by batch) 100 times.
-    # due to the slow speed, default setting is 2. you can increase if you have GPU.
+    ###
     
     # Net
     if os.path.isfile('apple.h5'):  # if there's already pretrained model / weights, load them
@@ -321,29 +268,26 @@ if __name__ == "__main__":
         hist = loaded_model.fit(x_train, y_train, 
                               validation_split = 0.2, 
                               shuffle = True, 
-                              batch_size = 16, epochs = epoch, verbose = 1, 
+                              batch_size = 32, epochs = epoch, verbose = 1, 
                               callbacks = [early_stopping] )
-        scores = loaded_model.evaluate(x_test, y_test, batch_size = 16)
-        print("Loss:", scores[0])
-        print("Accuracy:", scores[1])
+        scores = loaded_model.evaluate(x_test, y_test, batch_size = 32)    
+        model = loaded_model        
         
     else:  # if there's no existing model / weight, build new model
         print("1st baseNet\n")                 
         basenet = BaseNet()    # new model.
-        # training. 
-        
-        hist = basenet.train(x_train, y_train, epoch)  # train during n epoch. hist is to plot loss, accuracy plot
-        
+        # training.         
+        hist = basenet.train(x_train, y_train, epoch)  # train during n epoch. hist is to plot loss, accuracy plot        
         scores = basenet.evaluate(x_test, y_test)  #scores for calculate test loss and accruacy        
-        print("Loss:", scores[0])
-        print("Accuracy:", scores[1])
+        model = basenet.model
         
-        plot_hist(hist)            
-        confusion_result = make_confusion_matrix(basenet, x_test, y_test, normalize = True) 
-        
-        #test = random.shuffle(x_test)[0]        
-        
-        save_model_weight(basenet.model, model_name = 'apple', path = './')
+    print("Loss:", scores[0])
+    print("Accuracy:", scores[1])
+    
+    plot_hist(hist)            
+    confusion_result = make_confusion_matrix(model, x_test, y_test, normalize = True) 
+            
+    save_model_weight(model, model_name = 'apple', path = './')
         # This is for saving the model as png file. 
     #test_fig = plot_model(model, to_file='BaseNet.png', show_shapes=True, show_layer_names=True)
     #plt.plot(test_fig)    
