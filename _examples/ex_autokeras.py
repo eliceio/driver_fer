@@ -165,7 +165,7 @@ if __name__ == '__main__':
     x_train, x_test, y_train, y_test = train_test_split(x_data, y_data, test_size = 0.2, shuffle = True, random_state=33)
     
     # Autokeras fit start.
-    clf = model_fit(x_train, y_train, resume=True, iter_num=5, time_limit=6)
+    clf = model_fit(x_train, y_train, resume=True, iter_num=10, time_limit=6)
     
     print('\nFinal fit start.\n')
     final_fit(clf, x_train, y_train, x_test, y_test)
