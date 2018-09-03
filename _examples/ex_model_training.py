@@ -287,7 +287,9 @@ if __name__ == "__main__":
     plot_hist(hist)            
     confusion_result = make_confusion_matrix(model, x_test, y_test, normalize = True) 
             
-    save_model_weight(model, model_name = 'apple', path = './')
+    model_name = 'apple.h5'
+    #save_model_weight(model, model_name = 'apple', path = './')
+    model.save(model, model_name)
         # This is for saving the model as png file. 
     #test_fig = plot_model(model, to_file='BaseNet.png', show_shapes=True, show_layer_names=True)
     #plt.plot(test_fig)    
