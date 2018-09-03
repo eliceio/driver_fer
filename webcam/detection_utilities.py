@@ -149,15 +149,15 @@ def check_driver_emotion(frame):
         count = emotion_list.count(0)
         if count > 5:
             sentence = "Angry detection!"
-            cv2.putText(frame, str(sentence), (int(cam_width * 0.3), int(cam_height * 0.9)), cv2.FONT_HERSHEY_SIMPLEX,
-                        0.7, (0, 0, 255), 2)
+            # cv2.putText(frame, str(sentence), (int(cam_width * 0.3), int(cam_height * 0.9)), cv2.FONT_HERSHEY_SIMPLEX,
+            #             0.7, (0, 0, 255), 2)
             if ALARM_count == 0:
-                warning(frame)
+                warning(frame,sentence)
             else:
                 ALARM_end = time.time()
                 temp = (ALARM_end - ALARM_start)
                 if temp > float(2.5):
-                    warning(frame)
+                    warning(frame,sentence)
 
 
 # 이 아래는 drowsy code.
@@ -292,10 +292,31 @@ def sound_alarm(path):
     playsound.playsound(path)
 
 
-def warning(frame):
+def warning(frame,sentence):
     global ALARM_start, ALARM_count
-    t = Thread(target=sound_alarm,
-               args=("alarm.WAV",))
+    if sentence == "Out of frame!":
+        cv2.putText(frame, str(sentence), (int(cam_width * 0.4), int(cam_height * 0.9)), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
+                    (0, 0, 255), 2)
+        t = Thread(target=sound_alarm,
+                   args=("../src/alarm_focus.WAV",))
+    elif sentence == "Drowsy detection!":
+        cv2.putText(frame, str(sentence), (int(cam_width * 0.3), int(cam_height * 0.9)),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        t = Thread(target=sound_alarm,
+                   args=("../src/alarm_drowsy.WAV",))
+    elif sentence == "The blink is slow!":
+        cv2.putText(frame, str(sentence), (int(cam_width * 0.3), int(cam_height * 0.9)),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        t = Thread(target=sound_alarm,
+                   args=("../src/alarm_drowsy.WAV",))
+    elif sentence == "Angry detection!":
+        cv2.putText(frame, str(sentence), (int(cam_width * 0.3), int(cam_height * 0.9)), cv2.FONT_HERSHEY_SIMPLEX,
+                    0.7, (0, 0, 255), 2)
+        t = Thread(target=sound_alarm,
+                   args=("../src/Gymnopedies_Satie.WAV",))
+    # t = Thread(target=sound_alarm,
+    #            args=("alarm.WAV",))
+
     t.deamon = True
     t.start()
     ALARM_start = time.time()
@@ -311,15 +332,15 @@ def drowsy_detection(frame, face):
         eye_not_recognition_time += 1
     if eye_not_recognition_time >= 20:
         sentence = "Out of frame!"
-        cv2.putText(frame, str(sentence), (int(cam_width * 0.4), int(cam_height * 0.9)), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
-                    (0, 0, 255), 2)
+        # cv2.putText(frame, str(sentence), (int(cam_width * 0.4), int(cam_height * 0.9)), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
+        #             (0, 0, 255), 2)
         if ALARM_count == 0:
-            warning(frame)
+            warning(frame,sentence)
         else:
             ALARM_end = time.time()
             temp = (ALARM_end - ALARM_start)
             if temp > float(2.5):
-                warning(frame)
+                warning(frame,sentence)
 
     if repeat <= 40:
         start(frame)
@@ -348,15 +369,15 @@ def drowsy_detection(frame, face):
                 # then sound the alarm
                 if COUNTER >= EYE_AR_CONSEC_FRAMES:
                     sentence = "Drowsy detection!"
-                    cv2.putText(frame, str(sentence), (int(cam_width * 0.3), int(cam_height * 0.9)),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                    # cv2.putText(frame, str(sentence), (int(cam_width * 0.3), int(cam_height * 0.9)),
+                    #             cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                     if ALARM_count == 0:
-                        warning(frame)
+                        warning(frame,sentence)
                     else:
                         ALARM_end = time.time()
                         temp = (ALARM_end - ALARM_start)
                         if temp > float(2.5):
-                            warning(frame)
+                            warning(frame,sentence)
 
 
             # otherwise, the eye aspect ratio is not below the blink
@@ -372,15 +393,15 @@ def drowsy_detection(frame, face):
                         count_drowsy_detection = 0
                     if count_drowsy_detection >= consecutive_drowsy:
                         sentence = "The blink is slow!"
-                        cv2.putText(frame, str(sentence), (int(cam_width * 0.3), int(cam_height * 0.9)),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                        # cv2.putText(frame, str(sentence), (int(cam_width * 0.3), int(cam_height * 0.9)),
+                        #             cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                         if ALARM_count == 0:
-                            warning(frame)
+                            warning(frame,sentence)
                         else:
                             ALARM_end = time.time()
                             temp = (ALARM_end - ALARM_start)
                             if temp > float(2.5):
-                                warning(frame)
+                                warning(frame,sentence)
                     eye_open = True
                 if COUNTER >= consecutive_eyes_closed:
                     TOTAL += 1
