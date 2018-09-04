@@ -14,6 +14,12 @@ from keras.utils.generic_utils import CustomObjectScope
 import os
 import glob
 
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+
+class_emotion = ['angry','happy','neutral'] 
+mpl.style.use('seaborn')
+
 parser = argparse.ArgumentParser(description="운전자 졸음, 난폭 운전 예방 시스템")
 parser.add_argument('model', type=str, default='ak', choices=['ak','mobile','basenet', 'vgg16', 'resnet', 'ensemble'],
                     help="운전자 감정 예측을 위한 모델을 선택")
@@ -60,19 +66,38 @@ def getCameraStreaming():
     print("Successed to capture video streaming")
     return capture
 
-
 def setDefaultCameraSetting():
     cv2.startWindowThread()
     cv2.namedWindow(winname=windowName)
     cv2.setWindowProperty(winname=windowName, prop_id=cv2.WINDOW_FULLSCREEN, prop_value=cv2.WINDOW_FULLSCREEN)
 
+def plot_emotion_history(emotion_hist):
+    fig, ax = plt.subplots()
+    ax.cla()
+    #ax.imshow()
+    emotion_hist= np.array(emotion_hist)
+    reshaped_emotion = emotion_hist.reshape((-1,3))
+    x = np.arange(reshaped_emotion.shape[0])
+    
+    plt.figure(0)
+    
+    fig, ax = plt.subplots()
+    
+    for i in range(3):
+        #name = cmaps[5][i]
+        ax.plot(x,reshaped_emotion[:,i], 'o', label=class_emotion[i])
+    
+    fig.legend(loc='lower left')
 
+    ax.set_title("frame {}".format(i))
+    # Note that using time.sleep does *not* work here!
+    plt.pause(0.1)
 
 def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for different emotion class models
     global isContinue, isArea, isLandmark, input_img, rect, bounding_box
 
     img_counter = 0  # jj_add / for counting images that are saved (option)
-    emotion_tracking = []
+    emotion_hist = []
     while True:
         input_img, rect, bounding_box = None, None, None
         ret, frame = capture.read()
@@ -89,10 +114,13 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
                 for i in range(len(emotion)):
                     #print("Emotion :{} / {} % ".format(emotion[i], round(result[i]*100, 2)))
                     cv2.putText(frame, "{}: {}% ".format(emotion[i], round(result[i]*100, 2)), (5, 20+(i*20)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-                    emotion_tracking.append(round(result[i]*100,2))
+                    emotion_hist.append(round(result[i]*100,2)) # to record emotion status
+                    
                 cv2.putText(frame, "Driver emotion: {}".format(emotion[index]), (5, 20+(20*len(emotion))), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                 du.add_driver_emotion(index)
                 du.check_driver_emotion(frame)
+                #plot_emotion_history(emotion_hist)
+            
 
         refreshScreen(frame)
         key = cv2.waitKey(20)
@@ -109,11 +137,11 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
         elif key == ord('r'):
             du.reset_global_value()
         elif key == ord('q'):
-            np.save('hist_emotion.npy',emotion_tracking) 
+            np.save('../data/hist_emotion.npy',emotion_hist) 
             break
         elif key%256 == 32:  # jj_add / press space bar to save cropped gray image
             try:
-                img_name = "cropped_gray_{}.png".format(img_counter)
+                img_name = '../data/'+"cropped_gray_{}.png".format(img_counter)
 
                 cv2.imwrite(img_name, np.squeeze(input_img))
                 print("{} written!".format(img_name))
