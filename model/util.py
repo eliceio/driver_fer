@@ -52,32 +52,10 @@ data_path = '../data'
 
 #landmarks = 'shape_predictor_68_face_landmarks.dat'
 
-detector = dlib.get_frontal_face_detector()
-#predictor = dlib.shape_predictor(landmarks)
-
-def dlib_face_coordinates(img):
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    return detector(gray, 0)
-
-def crop_face(frame, face_coordinates):
-    # case : dlib
-    cropped_img = frame
-    (x, y, w, h) = face_coordinates
-    cropped_img = frame[y - int(h / 4):y + h + int(h / 4), x - int(w / 4):x + w + int(w / 4)]
-    # cv2.imwrite('./0.png', cropped_img, params=[cv2.IMWRITE_PNG_COMPRESSION, 0])
-
-    # case : haar cascade
-    # cropped_img = frame
-    # for (x, y, w, h) in face_coordinates:
-    #     cropped_img = frame[y - int(h / 4):y + h + int(h / 4), x - int(w / 4):x + w + int(w / 4)]
-    return cropped_img
-
-def preprocess(img, face_coordinates, face_shape=(48, 48)):
-    face = crop_face(img, face_coordinates)
-    face_resize = cv2.resize(face, face_shape)
-    face_gray = cv2.cvtColor(face_resize, cv2.COLOR_BGR2GRAY)
-    cv2.imwrite('./cropped.png', face_gray, params=[cv2.IMWRITE_PNG_COMPRESSION, 0])
-    return face_gray
+def sample_plot(x_test, y_test):
+    x_angry = x_test[y_test==0]
+    a_f = np.squeeze(x_angry[1])
+    plt.imshow(a_f, cmap='gray')
 
 def preprocess_for_grad_CAM(img_arr, color_ch = 1):
     
@@ -198,11 +176,13 @@ def preprocess_img(img_path):
 def load_img_save_npy(data_path):
     
     split_label = ['test','train','validation']
+    
     class_label = ['angry', 'happy','neutral']
     
     x = []
     y = []
     
+    #os.walk
     list_dir = os.listdir(data_path)
     for i, i_name in enumerate(list_dir):
         print(i_name+'\n')
@@ -226,32 +206,47 @@ def load_img_save_npy(data_path):
     np.save('y_data_7.npy', y)
                     
     return x, y
-                
 
-def plot_samples_from_path(data_path='/github/fer/data', class_idx=0):
-    
-    split_label = ['train','validation','test']
+def plot_samples_from_path(data_path='/github/fer/data', class_idx=0, n = 100):
     class_label = ['angry', 'happy','neutral']
- 
-    path_test = os.path.join(data_path, split_label[2])
-    #class_list_dir = os.listdir(path_test)
-   
-    path_class = os.path.join(path_test, class_label[0]) ####### 0: neutral 1: happy 2: angry
-    files = glob.glob(path_class+'/*.png')
-    #random.shuffle(files)
-    #print(path_class)
+    split_label = ['test','train','validation']
+    list_folder = os.listdir(data_path)
     
-    # temporary for test
-    path_npy = '/python/autokeras/'
-    os.chdir(path_npy)
-    x = np.load('x_data_7.npy')
-    y = np.load('y_data_7.npy')
+    npy_list = glob.glob(data_path+'/*.npy')
+    chk_npy = False
+    if npy_list: # if there is a npy in the folder, load npy
+        print('\n Npy loading..\n')
+        chk_npy =True
+        x = np.load(npy_list[0])
+        y = np.load(npy_list[1])
+        if len(list(set(y))) > 3:
+            class_label = ['angry', 'disgust', 'fear','happy','sad','surprise','neutral']
+            
+        ### caution. n_class must be considered
+        files = x[y==class_idx]
+        np.random.shuffle(files)
+    else:     # if there's no npy, load png images from folder
+        print('load PNG images from the directory\n')
+        
+        if list_folder == split_label:  # that means, train, val, test split folder 
+            data_path = os.path.join(data_path, split_label[2]) # read from test folder
+            print('load from test folder\n')
+        
+        class_label = os.listdir(data_path)
+        n_class_label = len(class_label)
+        
+        if n_class_label ==7:
+            print('\n 7 Class \n')
+            class_label = ['angry', 'disgust', 'fear','happy','sad','surprise','neutral']
+            
+        print('Direct loading...\n')
+
+        path_class = os.path.join(data_path, class_label[class_idx]) ####### 0: neutral 1: happy 2: angry
+        files = glob.glob(path_class+'/*.png')
+        np.random.shuffle(files)
+    print('\n Class: {}\n'.format(class_label[class_idx]))
     
-    
-    files = x[y==class_idx]
-    np.random.shuffle(files)
-    
-    #files = files[0:100]
+    files = files[0:n]
     n_fig = len(files)
     print(n_fig)
     
@@ -263,7 +258,8 @@ def plot_samples_from_path(data_path='/github/fer/data', class_idx=0):
     n_diff = n_row*n_col-n_fig
         
     for i, file in enumerate(files):
-        #img = preprocess_img(file)
+        if chk_npy==False:
+            file = preprocess_img(file)
         
         axes[i].imshow(file, cmap = 'gray')
         axes[i].axis('off')
@@ -276,6 +272,25 @@ def plot_samples_from_path(data_path='/github/fer/data', class_idx=0):
     fig.savefig('total_'+class_label[class_idx]+'.png',bbox_inches='tight',dpi=300) 
     return 
 
+def plot_hist(hist):
+    plt.figure(0)
+    fig, loss_ax = plt.subplots()
+    acc_ax = loss_ax.twinx()
+
+    loss_ax.plot(hist.history['loss'], 'y', label='train loss')
+    loss_ax.plot(hist.history['val_loss'], 'r', label='val loss')
+    loss_ax.set_xlabel('epoch')
+    loss_ax.set_ylabel('loss')
+    loss_ax.legend(loc='upper left')
+
+    acc_ax.plot(hist.history['acc'], 'b', label='train acc')
+    acc_ax.plot(hist.history['val_acc'], 'g', label='val acc')
+    acc_ax.set_ylabel('accuracy')
+    acc_ax.legend(loc='lower left')
+
+    plt.show()
+    plt.savefig('loss_accuracy_plot')
+    plt.close()
 
 def plot_confusion_matrix(cm, classes,
                           normalize = False,
@@ -324,38 +339,45 @@ def make_confusion_matrix(model, x, y, normalize = True):
     
 # ex) confusion_result = make_confusion_matrix(loaded_model, x_test, y_test, False)
 
+
+
 if __name__ == "__main__":
     #os.chdir('/github')
     #os.chdir('./models/')
+    data_path = '/Data/'
     
+    data_path = '/Data/fer_ck_image/ck'
+    #plot_samples_from_path(data_path, class_idx =0 , n=500) # 0 3 6
 #    ## for whole data plot
 #    data_path = '/github/fer/data'
 #    for i in range(3):
 #        plot_samples_from_path(class_idx=i)
    
     #x,y = load_img_save_npy(data_path)
-            
-    print("===============================================================")
-    plt.close()
-    loaded_model = load_model('./models/ak7_16.h5')    
-    
-#    #### transfer mobiel net model
-#    model_path = 'test_mobile_model'
-#    mobile_weight_path = 'test_mobile_weight'
+#            
+#    print("===============================================================")
+#    plt.close()
+#    loaded_model = load_model('./models/ak7_16.h5')    
 #    
-##    with CustomObjectScope({'relu6': keras.layers.ReLU(6.),'DepthwiseConv2D': keras.layers.DepthwiseConv2D}):
-##        loaded_model = load_model(model_path+'.h5')  
+##    #### transfer mobiel net model
+##    model_path = 'test_mobile_model'
+##    mobile_weight_path = 'test_mobile_weight'
 ##    
-##    loaded_model.load_weights(mobile_weight_path+'.h5')  
-##    
-    loaded_model.compile(loss = categorical_crossentropy,
-              optimizer=Adam(lr = 0.001, beta_1 = 0.9, beta_2 = 0.999, epsilon = 1e-7),
-              metrics=['accuracy'])
-    
-    total_layer = len(loaded_model.layers)
-    print('Total Layer:{}'.format(total_layer))
-    
-    #######
+###    with CustomObjectScope({'relu6': keras.layers.ReLU(6.),'DepthwiseConv2D': keras.layers.DepthwiseConv2D}):
+###        loaded_model = load_model(model_path+'.h5')  
+###    
+###    loaded_model.load_weights(mobile_weight_path+'.h5')  
+###    
+#    loaded_model.compile(loss = categorical_crossentropy,
+#              optimizer=Adam(lr = 0.001, beta_1 = 0.9, beta_2 = 0.999, epsilon = 1e-7),
+#              metrics=['accuracy'])
+#    
+#    total_layer = len(loaded_model.layers)
+#    print('Total Layer:{}'.format(total_layer))
+#    
+#    ####### gradCAM
+    model_path = './models/ak31_32.h5'
+    loaded_model = load_model(model_path)
     samples = load_sample_img(data_path)
     
     n_layer = 15
