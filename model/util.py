@@ -87,7 +87,8 @@ def grad_cam(model, img_arr, img_tensor, class_idx, layer_idx):
     
     return cam, predictions
 
-def plot_grad_cam(model, img, pred_class, layer_idx = -3, n_layer =1, color_ch = 1):
+def plot_grad_cam(model, img, pred_class, layer_idx = -3, n_layer =1, color_ch = 1, idx=0):
+    # idx = subject id of name for save plot
     
     img_arr, img_tensor = preprocess_for_grad_CAM(img, color_ch)
             
@@ -137,20 +138,20 @@ def plot_grad_cam(model, img, pred_class, layer_idx = -3, n_layer =1, color_ch =
     fig.tight_layout()
     fig.show()
     
-    fig.savefig('gradCAM'+class_label[pred_class]+'.png',bbox_inches='tight',dpi=300)
+    fig.savefig(str(idx)+'gradCAM_'+class_label[pred_class]+'.png',bbox_inches='tight',dpi=300)
     print(class_label[pred_class])
     
 
  # ex) img, cam, predictions = grad_cam(ak_net_0, img_path, class_idx, -13)
-def load_sample_img(data_path):
+def load_sample_img(data_path, idx=0):
     
     split_label = ['train','validation','test']
     class_label = ['angry', 'happy','neutral']
     
     list_dir = os.listdir(data_path)
     
-    np.random.shuffle(list_dir)
-    path_test = os.path.join(data_path, list_dir[0],split_label[2])
+    #np.random.shuffle(list_dir)
+    path_test = os.path.join(data_path, list_dir[idx],split_label[2])
     print('\nRandom selection\n Subject:'+list_dir[0])
     
     samples =[]
@@ -346,7 +347,7 @@ if __name__ == "__main__":
     #os.chdir('./models/')
     data_path = '/Data/'
     
-    data_path = '/Data/fer_ck_image/ck'
+    #data_path = '/Data/fer_ck_image/ck'
     #plot_samples_from_path(data_path, class_idx =0 , n=500) # 0 3 6
 #    ## for whole data plot
 #    data_path = '/github/fer/data'
@@ -377,15 +378,19 @@ if __name__ == "__main__":
 #    
 #    ####### gradCAM
     model_path = './models/ak31_32.h5'
+    data_path = '../Data/'
     loaded_model = load_model(model_path)
-    samples = load_sample_img(data_path)
+    n_subject = 7
+    for j in range(n_subject):
+        samples = load_sample_img(data_path, j)
     
-    n_layer = 15
-    layer_idx = -4  # investigate layer start from ..
-    color_ch = 1    # 1 for gray, 3 for model use RGB 
-    print(len(samples))
-    for i, sample in enumerate(samples):
-        plot_grad_cam(loaded_model, sample, pred_class=i, layer_idx = layer_idx, n_layer=n_layer, color_ch = color_ch)
-        
+        n_layer = 15
+        layer_idx = -4  # investigate layer start from ..
+        color_ch = 1    # 1 for gray, 3 for model use RGB 
+        print(len(samples))
+        for i, sample in enumerate(samples):
+            
+            plot_grad_cam(loaded_model, sample, pred_class=i, layer_idx = layer_idx, n_layer=n_layer, color_ch = color_ch, idx=j)
+            
 
 
