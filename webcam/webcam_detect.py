@@ -71,6 +71,30 @@ def setDefaultCameraSetting():
     cv2.namedWindow(winname=windowName)
     cv2.setWindowProperty(winname=windowName, prop_id=cv2.WINDOW_FULLSCREEN, prop_value=cv2.WINDOW_FULLSCREEN)
 
+import matplotlib as mpl
+from scipy import signal
+
+class_emotion = ['angry','happy','neutral'] 
+mpl.style.use('seaborn')
+
+def load_plot_emotion_hist():
+    t= np.load('hist_emotion.npy')
+    t=t.reshape((-1,3))
+
+    t = signal.resample(t, int(len(t)/10))
+    x = np.arange(t.shape[0])
+    
+    plt.figure(0)
+    fig, ax = plt.subplots()
+    
+    for i in range(3):
+        #name = cmaps[5][i]
+        ax.plot(x,t[:,i], 'o-', label=class_emotion[i])
+
+    fig.legend(loc='lower left')
+    plt.show()
+    fig.savefig('loss_accuracy_plot')
+
 def plot_emotion_history(emotion_hist):
     fig, ax = plt.subplots()
     ax.cla()
