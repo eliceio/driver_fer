@@ -167,10 +167,14 @@ def plot_confusion_matrix(cm, classes,
 if __name__ == "__main__":
     print("===============================================================")
     
+#    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size = 0.2, shuffle = True, random_state=33)
+#    x_train, x_val, y_train, y_val = train_test_split(x_train, y_train, test_size = 0.25, shuffle = True, random_state=33)
+#    print('N of train:{} val:{} test:{}\n'.format(len(x_train),len(x_val),len(x_test)))
+#        
     # data load
     x_data = np.load('./x_data.npy')
     y_data = np.load('./y_data.npy')
-    
+        
     # 2. arrange the data. shape change, use specific class only, ...
     x_data, y_data = data_arrange(x_data, y_data)
 
@@ -180,19 +184,16 @@ if __name__ == "__main__":
     
     # 4. data batch generation. Parameter belows include augmentations, so please check before run
     datagen = ImageDataGenerator(
-        featurewise_center=False,  # set input mean to 0 over the dataset
-        samplewise_center=False,  # set each sample mean to 0
-        featurewise_std_normalization=False,  # divide inputs by std of the dataset
-        samplewise_std_normalization=False,  # divide each input by its std
-        zca_whitening=False,  # apply ZCA whitening
+        
+        zca_whitening=True  # apply ZCA whitening
         zca_epsilon=1e-06,  # epsilon for ZCA whitening
-        rotation_range=0,  # randomly rotate images in the range (degrees, 0 to 180)
+        rotation_range=30,  # randomly rotate images in the range (degrees, 0 to 180)
         # randomly shift images horizontally (fraction of total width)
         width_shift_range=0.1,
         # randomly shift images vertically (fraction of total height)
         height_shift_range=0.1,
-        shear_range=0.,  # set range for random shear
-        zoom_range=0.,  # set range for random zoom
+        shear_range=0.2,  # set range for random shear
+        zoom_range=0.2,  # set range for random zoom
         channel_shift_range=0.,  # set range for random channel shifts
         # set mode for filling points outside the input boundaries
         fill_mode='nearest',
@@ -200,7 +201,7 @@ if __name__ == "__main__":
         horizontal_flip=True,  # randomly flip images
         vertical_flip=False,  # randomly flip images
         # set rescaling factor (applied before any other transformation)
-        rescale=None,
+        rescale=1./255,
         # set function that will be applied on each input
         preprocessing_function=None,
         # image data format, either "channels_first" or "channels_last"
@@ -243,7 +244,7 @@ if __name__ == "__main__":
     ##### Start learning. same procedure.
     
     model.compile(loss = categorical_crossentropy,
-                      optimizer=Adam(lr = 0.001, beta_1 = 0.9, beta_2 = 0.999, epsilon = 1e-7),
+                      optimizer=Adam(lr = 0.0001, beta_1 = 0.9, beta_2 = 0.999, epsilon = 1e-7),
                       metrics=['accuracy'])
 
     hist = model.fit_generator(datagen.flow(x_train, y_train,
@@ -261,7 +262,7 @@ if __name__ == "__main__":
     ##### Start learning. same procedure.
     
     model.compile(loss = categorical_crossentropy,
-                      optimizer=Adam(lr = 0.001, beta_1 = 0.9, beta_2 = 0.999, epsilon = 1e-7),
+                      optimizer=Adam(lr = 0.0001, beta_1 = 0.9, beta_2 = 0.999, epsilon = 1e-7),
                       metrics=['accuracy'])
 
     hist = model.fit_generator(datagen.flow(x_train, y_train,

@@ -10,6 +10,7 @@ import cv2
 import pandas as pd
 import numpy as np
 import dlib
+import glob
 
 from keras.models import model_from_json
 from keras.models import load_model
@@ -20,11 +21,120 @@ from sklearn.model_selection import train_test_split
 
 import autokeras as ak
 
-class_label = ['angry', 'disgust', 'fear','happy','sad','surprise','neutral']
+import shutil
+
+clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))      
+class_label = ['angry', 'happy','neutral']
+#class_label = ['angry', 'disgust', 'fear','happy','sad','surprise','neutral']
+split_label = ['train', 'validation', 'test']
 n_class = len(class_label)
 
-path = '/python/DDSA/fer/fer2013/'
-file_name = 'fer2013_2.csv'
+path = '/data/'
+file_name = 'fer2013_processed.csv'
+
+
+def make_img_split(path):
+    
+    os.chdir(path)
+    
+    for k, k_class in enumerate(class_label):
+        print('Class:{}\n'.format(k_class))
+        final_path = os.path.join(data_path, k_class)
+        files = glob.glob(final_path+'/*.png')
+        
+        n_files = len(files)
+       # idx = np.arange(n_files)
+        np.random.shuffle(files)
+        
+        f_train = files[0 : int(n_files*0.6)]
+        f_val = files[int(n_files*0.6):int(n_files*0.8)]
+        f_test = files[int(n_files*0.8):n_files]       
+        
+        
+        for tf in f_train:
+            t_path = os.path.join(path, split_label[0], k_class)
+            if not os.path.exists(t_path):
+                os.makedirs(t_path)
+            shutil.copy(tf, t_path)
+        for vf in f_val:
+            v_path = os.path.join(path, split_label[1], k_class)
+            if not os.path.exists(v_path):
+                os.makedirs(v_path)
+            shutil.copy(vf, v_path)
+        for ttf in f_test:
+            tt_path = os.path.join(path, split_label[2], k_class)
+            if not os.path.exists(tt_path):
+                os.makedirs(tt_path)
+            shutil.copy(ttf, tt_path)
+        
+
+def preprocess_img(img_path):
+    img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)  #load img as grayscale
+    img = clahe.apply(img)  # histogram equalization
+    img = np.array(img)/255.  # normalize
+    return img
+
+def load_faces_save_npy(data_path):
+    
+    #class_label = ['angry', 'disgust', 'fear', 'happy', 'neutral','sad', 'surprise']
+    
+    x = []
+    y = []
+    
+    #os.walk
+    
+    for k, k_class in enumerate(class_label):
+        final_path = os.path.join(data_path, k_class)
+        files = glob.glob(final_path+'/*.png')
+        for file in files:
+            img = preprocess_img(file)
+            x.append(img)
+            y.append(k)  # class, subject
+            
+    x=np.array(x)
+    y=np.array(y)
+    
+    print(x.shape)
+    print(y.shape)
+    np.save('x_data_fer.npy', x)
+    np.save('y_data_fer.npy', y)
+                    
+    return x, y
+
+def load_fer_ck_save_npy(data_path):
+    
+    #class_label = ['angry', 'disgust', 'fear', 'happy', 'neutral','sad', 'surprise']
+    
+    x = []
+    y = []
+    
+    #os.walk
+    list_dir = os.listdir(data_path)
+    for i, i_name in enumerate(list_dir):
+        print(i_name+'\n')
+        name_path = os.path.join(data_path,i_name)     
+        for k, k_class in enumerate(class_label):
+            final_path = os.path.join(name_path, k_class)
+            files = glob.glob(final_path+'/*.png')
+            for file in files:
+                img = preprocess_img(file)
+                x.append(img)
+                y.append([k, i])  # class, subject
+                
+    x=np.array(x)
+    y=np.array(y)
+    y=y[:,0]
+    
+    for i in range(6):
+         print(len(y[y==i]))
+    print(x.shape)
+    print(y.shape)
+    
+    np.save('x_data_ferck7.npy', x)
+    np.save('y_data_ferck7.npy', y)
+                    
+    return x, y
+
 
 # load csv fer2013 data for FER.
 def load_csv_data():
@@ -259,7 +369,7 @@ def convert_csv_to_dlib():
         #frame = cv2.imread(path_name)
         
         gray = cv2.cvtColor(picture, cv2.COLOR_BGR2GRAY)
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
+        
         clahe_image = clahe.apply(gray)
         detections = detector(clahe_image, 1) #Detect the faces in the image
         for k,d in enumerate(detections): #For each detected face
@@ -280,19 +390,17 @@ def convert_csv_to_dlib():
 
 if __name__ == "__main__":
     print('Something start')
+    data_path = '/data/fer_ck_image/fer_3class/'
+    #os.chdir(data_path)
+    make_img_split(data_path)
     #cvt_csv2face()
-    #load_autokeras()
-#    x_train, x_test, y_train, y_test = load_data()
-#    x_train = normalize_resize(x_train)
-#    x_test = normalize_resize(x_test)
-#    
-#    np.save('./x_train_197.npy', x_train)
-#    np.save('./x_test_197.npy', x_test)
-#    np.save('./y_train.npy', y_train)
-#    np.save('./y_test.npy', y_test)
-    model = load_model('/python/ak_3class_transfer.h5')
-    model_name = 'ak_3class_transfer'
-    plot_model(model, to_file = model_name + '_net.png', show_shapes=True, show_layer_names=True)
+    #load_fer_ck_save_npy(data_path)
+    #load_faces_save_npy(data_path)
     
+
+#    model = load_model('/python/ak_3class_transfer.h5')
+#    model_name = 'ak_3class_transfer'
+#    plot_model(model, to_file = model_name + '_net.png', show_shapes=True, show_layer_names=True)
+#    
     
     
