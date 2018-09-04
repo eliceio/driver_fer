@@ -72,7 +72,7 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
     global isContinue, isArea, isLandmark, input_img, rect, bounding_box
 
     img_counter = 0  # jj_add / for counting images that are saved (option)
-
+    emotion_tracking = []
     while True:
         input_img, rect, bounding_box = None, None, None
         ret, frame = capture.read()
@@ -89,6 +89,7 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
                 for i in range(len(emotion)):
                     #print("Emotion :{} / {} % ".format(emotion[i], round(result[i]*100, 2)))
                     cv2.putText(frame, "{}: {}% ".format(emotion[i], round(result[i]*100, 2)), (5, 20+(i*20)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                    emotion_tracking.append(round(result[i]*100,2))
                 cv2.putText(frame, "Driver emotion: {}".format(emotion[index]), (5, 20+(20*len(emotion))), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                 du.add_driver_emotion(index)
                 du.check_driver_emotion(frame)
@@ -108,6 +109,7 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
         elif key == ord('r'):
             du.reset_global_value()
         elif key == ord('q'):
+            np.save('hist_emotion.npy',emotion_tracking) 
             break
         elif key%256 == 32:  # jj_add / press space bar to save cropped gray image
             try:
