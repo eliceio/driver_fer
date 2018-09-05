@@ -10,7 +10,7 @@ import sys
 clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
 angry_check=0
 # dlib을 위한 변수
-landmarks = '../model/shape_predictor_68_face_landmarks.dat'  # jj_modify for relative path to the dat
+landmarks = '../src/shape_predictor_68_face_landmarks.dat'  # jj_modify for relative path to the dat
 print("[INFO] loading facial landmark predictor...")
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor(landmarks)
