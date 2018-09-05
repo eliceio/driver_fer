@@ -65,7 +65,7 @@ def preprocess(img, face_coordinates, face_shape=(48, 48)):
     if face is not None:
         face_resize = cv2.resize(face, face_shape)
         face_gray = cv2.cvtColor(face_resize, cv2.COLOR_BGR2GRAY)
-        face_gray = clahe.apply(face_gray) #/ 255. # inactivate normalize temporally
+        #face_gray = clahe.apply(face_gray) #/ 255. # inactivate normalize temporally
         cv2.imwrite('./123.png', face_gray, params=[cv2.IMWRITE_PNG_COMPRESSION, 0])
         return face_gray
     else:
