@@ -14,6 +14,8 @@ from keras.utils.generic_utils import CustomObjectScope
 import os
 import glob
 
+from datetime import datetime
+                
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
@@ -101,10 +103,8 @@ def plot_emotion_history(emotion_hist):
     #ax.imshow()
     emotion_hist= np.array(emotion_hist)
     reshaped_emotion = emotion_hist.reshape((-1,3))
-    x = np.arange(reshaped_emotion.shape[0])
-    
-    plt.figure(0)
-    
+    x = np.arange(reshaped_emotion.shape[0])    
+        
     fig, ax = plt.subplots()
     
     for i in range(3):
@@ -116,6 +116,23 @@ def plot_emotion_history(emotion_hist):
     ax.set_title("frame {}".format(i))
     # Note that using time.sleep does *not* work here!
     plt.pause(0.1)
+
+def getCameraStreaming():
+    capture = cv2.VideoCapture(0)
+    global camera_width, camera_height
+    camera_width = capture.get(3)
+    camera_height = capture.get(4)
+    du.set_default_min_max_area(camera_width, camera_height)
+    if not capture:
+        print("Failed to capture video streaming")
+        sys.exit()
+    print("Successed to capture video streaming")
+    return capture
+
+def setDefaultCameraSetting():
+    cv2.startWindowThread()
+    cv2.namedWindow(winname=windowName)
+    cv2.setWindowProperty(winname=windowName, prop_id=cv2.WINDOW_FULLSCREEN, prop_value=cv2.WINDOW_FULLSCREEN)
 
 def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for different emotion class models
     global isContinue, isArea, isLandmark, input_img, rect, bounding_box
@@ -161,12 +178,14 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
         elif key == ord('r'):
             du.reset_global_value()
         elif key == ord('q'):
-            np.save('../data/hist_emotion.npy',emotion_hist) 
+            time_now = datetime.now().strftime('%Y%m%d_%H%M%S') # save and plot emotion history
+            np.save('../data/'+time_now+'hist_emotion.npy',emotion_hist) 
+            load_plot_emotion_hist()
             break
         elif key%256 == 32:  # jj_add / press space bar to save cropped gray image
             try:
-                img_name = '../data/'+"cropped_gray_{}.png".format(img_counter)
-
+                time_now = datetime.now().strftime('%Y%m%d_%H%M%S')
+                img_name = '../data/'+time_now+"_cropped_gray_{}.png".format(img_counter)
                 cv2.imwrite(img_name, np.squeeze(input_img))
                 print("{} written!".format(img_name))
                 img_counter += 1
