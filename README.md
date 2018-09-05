@@ -20,3 +20,7 @@ Initial requirements are as follows.
   imutils 0.5.0
   dlib 19.1.0
 ```
+Installation: 
+```
+pip install -r requirements.txt 
+```
