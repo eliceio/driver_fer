@@ -372,7 +372,7 @@ def drowsy_detection(frame, face):
                 # if the eyes were closed for a sufficient number of
                 # then sound the alarm
                 if COUNTER >= EYE_AR_CONSEC_FRAMES and angry_status == False:
-                    print(angry_status)
+                    # print(angry_status)
                     sentence = "Drowsy detection!"
                     if ALARM_count == 0:
                         warning(frame, sentence)
@@ -386,7 +386,7 @@ def drowsy_detection(frame, face):
             else:
                 if not eye_open:
                     end_time = time.time()
-                    print("눈 뜸 " + str(end_time - start_time))
+                    # print("눈 뜸 " + str(end_time - start_time))
                     if (end_time - start_time) >= float(0.4):
                         count_drowsy_detection += 1
 
