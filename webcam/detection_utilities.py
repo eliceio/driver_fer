@@ -8,7 +8,7 @@ import time
 import sys
 
 clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-angry_check=0
+angry_check = 0
 # dlib을 위한 변수
 landmarks = '../src/shape_predictor_68_face_landmarks.dat'  # jj_modify for relative path to the dat
 print("[INFO] loading facial landmark predictor...")
@@ -135,7 +135,13 @@ def checkFaceCoordinate(face_coordinates, in_area=True):
 
 
 def add_driver_emotion(idx_emotion):
-    global emotion_list
+    global emotion_list, angry_status
+
+    if idx_emotion == "angry":
+        angry_status = True
+    else:
+        angry_status = False
+
     # emotion_list에 감정 저장.
     if len(emotion_list) in range(0, 10):
         emotion_list.append(idx_emotion)
@@ -149,15 +155,14 @@ def check_driver_emotion(frame):
         count = emotion_list.count(0)
         if count > 5:
             sentence = "Angry detection!"
-            angry_check = 1
+
             if ALARM_count == 0:
-                warning(frame,sentence)
+                warning(frame, sentence)
             else:
                 ALARM_end = time.time()
                 temp = (ALARM_end - ALARM_start)
-                if temp > float(33.4):
-                    warning(frame,sentence)
-            angry_check=0
+                if temp > float(8.5):
+                    warning(frame, sentence)
 
 
 # 이 아래는 drowsy code.
@@ -185,6 +190,8 @@ Sleeping_eye = 0
 COUNTER = 0
 start_time = 0
 end_time = 0
+# 알람이 한개만 울리도록 함
+angry_status = False
 # 알림음 시간
 ALARM_start = 0
 ALARM_end = 0
@@ -274,7 +281,7 @@ def eye_aspect_ratio(eye):
 def start(frame):
     global repeat
     if repeat in range(1, 11):
-        cv2.putText(frame, "Look at the camera for five seconds.", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
+        cv2.putText(frame, "Look at the camera for a moment..", (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
                     (255, 0, 0), 2)
     elif repeat in range(11, 21):
         cv2.putText(frame, "3", (150, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
@@ -292,7 +299,7 @@ def sound_alarm(path):
     playsound.playsound(path)
 
 
-def warning(frame,sentence):
+def warning(frame, sentence):
     global ALARM_start, ALARM_count
     if sentence == "Out of frame!":
         cv2.putText(frame, str(sentence), (int(cam_width * 0.4), int(cam_height * 0.9)), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
@@ -301,7 +308,7 @@ def warning(frame,sentence):
                    args=("../src/alarm_focus.WAV",))
     elif sentence == "Drowsy detection!":
         cv2.putText(frame, str(sentence), (int(cam_width * 0.3), int(cam_height * 0.9)),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
         t = Thread(target=sound_alarm,
                    args=("../src/alarm_drowsy.WAV",))
     elif sentence == "The blink is slow!":
@@ -330,12 +337,12 @@ def drowsy_detection(frame, face):
     if eye_not_recognition_time >= 20:
         sentence = "Out of frame!"
         if ALARM_count == 0:
-            warning(frame,sentence)
+            warning(frame, sentence)
         else:
             ALARM_end = time.time()
             temp = (ALARM_end - ALARM_start)
             if temp > float(2.5):
-                warning(frame,sentence)
+                warning(frame, sentence)
 
     if repeat <= 40:
         start(frame)
@@ -346,6 +353,8 @@ def drowsy_detection(frame, face):
 
         # 사용자의 평균 눈 크기 구하기
         if repeat in range(41, 46):
+            cv2.putText(frame, "Measuring...." + str(repeat - 40), (150, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
+                        (255, 0, 0), 2)
             user_eye, Sleeping_eye = eye_size_cal(ear, frame)
         elif repeat in range(46, 56):
             cv2.putText(frame, "Start!", (150, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
@@ -355,57 +364,55 @@ def drowsy_detection(frame, face):
             # threshold, and if so, increment the blink frame counter
             if ear < Sleeping_eye:
                 if eye_open:
-                    print("눈감음")
                     start_time = time.time()
                     eye_open = False
 
                 COUNTER += 1
                 # if the eyes were closed for a sufficient number of
                 # then sound the alarm
-                if COUNTER >= EYE_AR_CONSEC_FRAMES:
+                if COUNTER >= EYE_AR_CONSEC_FRAMES and angry_status == False:
+                    print(angry_status)
                     sentence = "Drowsy detection!"
-
-                    if angry_check == 0:
-                        if ALARM_count == 0:
-                            warning(frame,sentence)
-                        else:
-                            ALARM_end = time.time()
-                            temp = (ALARM_end - ALARM_start)
-                            if temp > float(2.5):
-                                warning(frame,sentence)
-
-
-            # otherwise, the eye aspect ratio is not below the blink
-            # threshold, so reset the counter and alarm
-            else:
-                if not eye_open:
-                    end_time = time.time()
-                    print("눈 뜸 " + str(end_time - start_time))
-                    if (end_time - start_time) >= float(0.4):
-                        count_drowsy_detection += 1
-
+                    if ALARM_count == 0:
+                        warning(frame, sentence)
                     else:
-                        count_drowsy_detection = 0
-                    if count_drowsy_detection >= consecutive_drowsy:
-                        sentence = "The blink is slow!"
-                        if ALARM_count == 0:
-                            warning(frame,sentence)
-                        else:
-                            ALARM_end = time.time()
-                            temp = (ALARM_end - ALARM_start)
-                            if temp > float(2.5):
-                                warning(frame,sentence)
-                    eye_open = True
-                if COUNTER >= consecutive_eyes_closed:
-                    TOTAL += 1
-                COUNTER = 0
+                        ALARM_end = time.time()
+                        temp = (ALARM_end - ALARM_start)
+                        if temp > float(2.5):
+                            warning(frame, sentence)
 
-            # draw the computed eye aspect ratio on the frame to help
-            cv2.putText(frame, "EAR: {:.2f}".format(ear), (int(cam_width * 0.8), 30),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
-            cv2.putText(frame, "Slow blink count : " + str(count_drowsy_detection), (int(cam_width * 0.65), 50),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
 
-            # 눈 깜빡인 횟수 화면 출력
-            cv2.putText(frame, "Blinks: {}".format(TOTAL), (int(cam_width * 0.45), 50),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        # otherwise, the eye aspect ratio is not below the blink
+        # threshold, so reset the counter and alarm
+        else:
+            if not eye_open:
+                end_time = time.time()
+                print("눈 뜸 " + str(end_time - start_time))
+                if (end_time - start_time) >= float(0.4):
+                    count_drowsy_detection += 1
+
+                else:
+                    count_drowsy_detection = 0
+                if count_drowsy_detection >= consecutive_drowsy:
+                    sentence = "The blink is slow!"
+                    if ALARM_count == 0:
+                        warning(frame, sentence)
+                    else:
+                        ALARM_end = time.time()
+                        temp = (ALARM_end - ALARM_start)
+                        if temp > float(2.5):
+                            warning(frame, sentence)
+                eye_open = True
+            if COUNTER >= consecutive_eyes_closed:
+                TOTAL += 1
+            COUNTER = 0
+
+        # draw the computed eye aspect ratio on the frame to help
+        cv2.putText(frame, "EAR: {:.2f}".format(ear), (int(cam_width * 0.8), 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+        cv2.putText(frame, "Slow blink count : " + str(count_drowsy_detection), (int(cam_width * 0.65), 50),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+
+        # 눈 깜빡인 횟수 화면 출력
+        cv2.putText(frame, "Blinks: {}".format(TOTAL), (int(cam_width * 0.45), 50),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
