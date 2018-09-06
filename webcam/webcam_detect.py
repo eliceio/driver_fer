@@ -191,7 +191,7 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
             try:
                 time_now = datetime.now().strftime('%Y%m%d_%H%M%S')
                 img_name = '../data/'+time_now+"_cropped_gray_{}.png".format(img_counter)
-                cv2.imwrite(img_name, np.squeeze(input_img))
+                cv2.imwrite(img_name, np.squeeze(input_img*255.))  # to recover normalized img to save as gray scale image
                 print("{} written!".format(img_name))
                 img_counter += 1
             except:
