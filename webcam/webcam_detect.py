@@ -40,7 +40,7 @@ model_list = glob.glob('../model/models/*.h5')
 print(model_list)  # model list preparation
 
 ak_path = '../model/models/ak31_32.h5'  #jj_add / model path
-ak_weak_path = '../model/models/ak_weak_whole.h5'
+ak_weak_path = '../model/models/ak_weak_weak.h5'
 
 basenet_weight_path = '../model/models/base_3.h5'
 # 이런 식으로 나중에 변경.
