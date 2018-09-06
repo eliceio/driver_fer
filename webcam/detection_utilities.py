@@ -255,8 +255,8 @@ def draw_eye(frame, rect):
 
     left_eye_hull = cv2.convexHull(left_eye)
     right_eye_hull = cv2.convexHull(right_eye)
-    cv2.drawContours(frame, [left_eye_hull], -1, (0, 255, 0), 1)
-    cv2.drawContours(frame, [right_eye_hull], -1, (0, 255, 0), 1)
+    #cv2.drawContours(frame, [left_eye_hull], -1, (0, 255, 0), 1)
+    #cv2.drawContours(frame, [right_eye_hull], -1, (0, 255, 0), 1)
     return ear
 
 
@@ -418,7 +418,6 @@ def drowsy_detection(frame, face):
             #             cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
 
-      
-        
-    return end_time - start_time, ear, user_eye
 
+
+    return end_time - start_time, ear, user_eye
