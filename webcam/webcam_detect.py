@@ -61,66 +61,30 @@ input_img = None
 rect = None
 bounding_box = None
 
-def getCameraStreaming():
-    capture = cv2.VideoCapture(0)
-    global camera_width, camera_height
-    camera_width = capture.get(3)
-    camera_height = capture.get(4)
-    du.set_default_min_max_area(camera_width, camera_height)
-    if not capture:
-        print("Failed to capture video streaming")
-        sys.exit()
-    print("Successed to capture video streaming")
-    return capture
-
-def setDefaultCameraSetting():
-    cv2.startWindowThread()
-    cv2.namedWindow(winname=windowName)
-    cv2.setWindowProperty(winname=windowName, prop_id=cv2.WINDOW_FULLSCREEN, prop_value=cv2.WINDOW_FULLSCREEN)
-
 import matplotlib as mpl
 from scipy import signal
 
 class_emotion = ['angry','happy','neutral'] 
 mpl.style.use('seaborn')
 
-def load_plot_emotion_hist():
-    t= np.load('hist_emotion.npy')
-    t=t.reshape((-1,3))
+def plot_emotion_hist(emotion_hist):
+    #t= np.load(emotion_hist)
+    emotion_hist = np.array(emotion_hist)
+    t = emotion_hist.reshape((-1,3))
 
-    t = signal.resample(t, int(len(t)/10))
+    t = signal.resample(t, int(len(t)/5))
     x = np.arange(t.shape[0])
-    
-    plt.figure(0)
+        
     fig, ax = plt.subplots()
     
     for i in range(3):
         #name = cmaps[5][i]
         ax.plot(x,t[:,i], 'o-', label=class_emotion[i])
 
-    fig.legend(loc='lower left')
-    plt.show()
-    fig.savefig('loss_accuracy_plot')
-
-def plot_emotion_history(emotion_hist):
-    fig, ax = plt.subplots()
-    ax.cla()
-    #ax.imshow()
-    emotion_hist= np.array(emotion_hist)
-    reshaped_emotion = emotion_hist.reshape((-1,3))
-    x = np.arange(reshaped_emotion.shape[0])    
-        
-    fig, ax = plt.subplots()
-    
-    for i in range(3):
-        #name = cmaps[5][i]
-        ax.plot(x,reshaped_emotion[:,i], 'o', label=class_emotion[i])
-    
-    fig.legend(loc='lower left')
-
-    ax.set_title("frame {}".format(i))
-    # Note that using time.sleep does *not* work here!
-    plt.pause(0.1)
+    fig.legend(loc='upper left')
+    fig.savefig('../data/plot_emotion_hist')
+    fig.show()    
+    plt.pause(2)
 
 def getCameraStreaming():
     capture = cv2.VideoCapture(0)
@@ -185,8 +149,9 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
         elif key == ord('q'):
             time_now = datetime.now().strftime('%Y%m%d_%H%M%S') # save and plot emotion history
             np.save('../data/'+time_now+'hist_emotion.npy',emotion_hist) 
-            load_plot_emotion_hist()
+            plot_emotion_hist(emotion_hist)
             break
+        
         elif key%256 == 32:  # jj_add / press space bar to save cropped gray image
             try:
                 time_now = datetime.now().strftime('%Y%m%d_%H%M%S')
