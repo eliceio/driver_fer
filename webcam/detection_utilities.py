@@ -405,13 +405,13 @@ def drowsy_detection(frame, face):
                 if COUNTER >= consecutive_eyes_closed:
                     TOTAL += 1
                 COUNTER = 0
+            # cv2.putText(frame, "EAR: {:.2f}".format(ear), (int(cam_width * 0.8), 30),
+            #             cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+            cv2.putText(frame, "eye size: {:.2f}".format(ear), (int(cam_width * 0.7), 30),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+            cv2.putText(frame, "Slow blink count : " + str(count_drowsy_detection), (int(cam_width * 0.65), 50),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
 
-        # draw the computed eye aspect ratio on the frame to help
-        cv2.putText(frame, "EAR: {:.2f}".format(ear), (int(cam_width * 0.8), 30),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
-        cv2.putText(frame, "Slow blink count : " + str(count_drowsy_detection), (int(cam_width * 0.65), 50),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
-
-        # 눈 깜빡인 횟수 화면 출력
-        cv2.putText(frame, "Blinks: {}".format(TOTAL), (int(cam_width * 0.50), 50),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+            # # 눈 깜빡인 횟수 화면 출력
+            # cv2.putText(frame, "Blinks: {}".format(TOTAL), (int(cam_width * 0.50), 50),
+            #             cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
