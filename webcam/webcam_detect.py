@@ -6,6 +6,7 @@ import numpy as np
 sys.path.append("../")
 import model.basenet as baseNet
 import detection_utilities as du
+#from detection_utilities import end_time, start_time, user_eye
 
 import keras
 from keras.models import load_model
@@ -25,7 +26,7 @@ class_emotion = ['angry','happy','neutral']
 mpl.style.use('seaborn')
 
 parser = argparse.ArgumentParser(description="운전자 졸음, 난폭 운전 예방 시스템")
-parser.add_argument('model', type=str, default='ak', choices=['ak','ak_weak', 'mobile','basenet', 'vgg16', 'resnet', 'ensemble'],
+parser.add_argument('model', type=str, default='ak', choices=['ak','ak_weak', 'ak8', 'mobile','basenet', 'vgg16', 'resnet', 'ensemble'],
                     help="운전자 감정 예측을 위한 모델을 선택")
 args = parser.parse_args()
 model_name = args.model
@@ -41,7 +42,7 @@ print(model_list)  # model list preparation
 
 ak_path = '../model/models/ak31_32.h5'  #jj_add / model path
 ak_weak_path = '../model/models/ak_weak_weak.h5'
-
+ak8_path = '../model/models/ak8.h5'
 basenet_weight_path = '../model/models/base_3.h5'
 # 이런 식으로 나중에 변경.
 vgg16_weight_path = 'vgg16_weight.h5'
@@ -65,24 +66,32 @@ import matplotlib as mpl
 from scipy import signal
 
 class_emotion = ['angry','happy','neutral'] 
+#class_drowsy = ['eye blink speed', 'eye size ratio']
+class_drowsy = ['eye size']
 mpl.style.use('seaborn')
 
-def plot_emotion_hist(emotion_hist):
+def plot_hist(emotion_hist, class_hist):
     #t= np.load(emotion_hist)
-    emotion_hist = np.array(emotion_hist)
-    t = emotion_hist.reshape((-1,3))
+    emotion_hist = np.array(emotion_hist)   
+    
+    n = len(class_hist)
+    t = emotion_hist.reshape((-1,n))
 
     t = signal.resample(t, int(len(t)/5))
     x = np.arange(t.shape[0])
         
     fig, ax = plt.subplots()
     
-    for i in range(3):
+    for i in range(n):
         #name = cmaps[5][i]
-        ax.plot(x,t[:,i], 'o-', label=class_emotion[i])
-
+        ax.plot(x,t[:,i], 'o-', label=class_hist[i])
+    if n ==1:
+        name = 'drowsy'
+    elif n==3:
+        name = 'emotion'
+        
     fig.legend(loc='upper left')
-    fig.savefig('../data/plot_emotion_hist')
+    fig.savefig('../data/plot_'+name+'_hist')
     fig.show()    
     plt.pause(2)
 
@@ -108,18 +117,19 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
 
     img_counter = 0  # jj_add / for counting images that are saved (option)
     emotion_hist = []
+    drowsy_hist = []
     while True:
         input_img, rect, bounding_box = None, None, None
         ret, frame = capture.read()
         face_coordinates = du.dlib_face_coordinates(frame)
 
         if isContinue:
-            detect_area_driver(frame, face_coordinates,color_ch)
+            eye_speed, ear_out, user_eye = detect_area_driver(frame, face_coordinates,color_ch)
 
         if input_img is not None:
             result = model.predict(input_img)[0]
             index = int(np.argmax(result))
-
+            
             if du.repeat >= 56:
                 for i in range(len(emotion)):
                     #print("Emotion :{} / {} % ".format(emotion[i], round(result[i]*100, 2)))
@@ -129,9 +139,11 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
                 cv2.putText(frame, "Driver emotion: {}".format(emotion[index]), (5, 20+(20*len(emotion))), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                 du.add_driver_emotion(index)
                 du.check_driver_emotion(frame)
-                #plot_emotion_history(emotion_hist)
-            
-
+                
+                # eye history
+                eye_size = ear_out  # to prevent divide by zero                               
+                drowsy_hist.append([eye_size])
+                
         refreshScreen(frame)
         key = cv2.waitKey(20)
         if key == ord('s'):
@@ -149,7 +161,9 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
         elif key == ord('q'):
             time_now = datetime.now().strftime('%Y%m%d_%H%M%S') # save and plot emotion history
             np.save('../data/'+time_now+'hist_emotion.npy',emotion_hist) 
-            plot_emotion_hist(emotion_hist)
+            plot_hist(emotion_hist, class_emotion)
+            np.save('../data/'+time_now+'hist_drowsy.npy',drowsy_hist) 
+            plot_hist(drowsy_hist, class_drowsy)            
             break
         
         elif key%256 == 32:  # jj_add / press space bar to save cropped gray image
@@ -165,7 +179,7 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
 def detect_area_driver(frame, face_coordinates, color_ch=1):
     global input_img, rect, bounding_box
     rect, bounding_box = du.checkFaceCoordinate(face_coordinates, isArea)
-    du.drowsy_detection(frame, rect)
+    eye_speed, ear_out, user_eye = du.drowsy_detection(frame, rect)
 
     # 얼굴을 detection 한 경우.
     if bounding_box is not None and isContinue:
@@ -176,6 +190,10 @@ def detect_area_driver(frame, face_coordinates, color_ch=1):
             #input_img = np.expand_dims(input_img, axis=-1)
             input_img = np.stack((input_img,)*color_ch, -1 )
             #print(np.mean(input_img))
+    return eye_speed, ear_out, user_eye 
+
+
+
 
 
 def refreshScreen(frame):
@@ -207,6 +225,10 @@ def chooseWeight(model_name):
     elif model_name=='ak_weak':
         emotion=['Angry','Happy','Neutral']  ## jj_add /  3 emotion classes for ak net. return path and emotion classes
         return ak_weak_path, emotion
+    elif model_name=='ak8':
+        emotion=['Angry','Happy','Neutral']  ## jj_add /  3 emotion classes for ak net. return path and emotion classes
+        return ak8_path, emotion    
+    
     elif model_name=='mobile':
         emotion=['Angry','Happy','Neutral']
         return [mobile_path, mobile_weight_path], emotion

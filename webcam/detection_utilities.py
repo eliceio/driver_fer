@@ -331,7 +331,7 @@ def warning(frame, sentence):
 def drowsy_detection(frame, face):
     global repeat, eye_not_recognition_time, user_eye, Sleeping_eye, eye_open, COUNTER, end_time, start_time, count_drowsy_detection, TOTAL, ALARM_end, ALARM_start
     repeat += 1
-
+    ear = 0 # return  으로 webcam 에서 값을 받기 위해, 초기값 설
     # 눈 인식이 20초 이상 되지 않을 경우 알림 울리기
     if not face:
         eye_not_recognition_time += 1
@@ -405,6 +405,7 @@ def drowsy_detection(frame, face):
                 if COUNTER >= consecutive_eyes_closed:
                     TOTAL += 1
                 COUNTER = 0
+
             # cv2.putText(frame, "EAR: {:.2f}".format(ear), (int(cam_width * 0.8), 30),
             #             cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
             cv2.putText(frame, "eye size: {:.2f}".format(ear), (int(cam_width * 0.7), 30),
@@ -415,3 +416,9 @@ def drowsy_detection(frame, face):
             # # 눈 깜빡인 횟수 화면 출력
             # cv2.putText(frame, "Blinks: {}".format(TOTAL), (int(cam_width * 0.50), 50),
             #             cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+
+
+      
+        
+    return end_time - start_time, ear, user_eye
+
