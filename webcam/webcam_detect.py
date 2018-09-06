@@ -19,11 +19,13 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
+clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+
 class_emotion = ['angry','happy','neutral'] 
 mpl.style.use('seaborn')
 
 parser = argparse.ArgumentParser(description="운전자 졸음, 난폭 운전 예방 시스템")
-parser.add_argument('model', type=str, default='ak', choices=['ak','mobile','basenet', 'vgg16', 'resnet', 'ensemble'],
+parser.add_argument('model', type=str, default='ak', choices=['ak','ak_weak', 'mobile','basenet', 'vgg16', 'resnet', 'ensemble'],
                     help="운전자 감정 예측을 위한 모델을 선택")
 args = parser.parse_args()
 model_name = args.model
@@ -37,11 +39,14 @@ FACE_SHAPE = (48, 48)
 model_list = glob.glob('../model/models/*.h5')
 print(model_list)  # model list preparation
 
-basenet_weight_path = 'baseNet_weight.h5'
+ak_path = '../model/models/ak31_32.h5'  #jj_add / model path
+ak_weak_path = '../model/models/ak_weak_weak.h5'
+
+basenet_weight_path = '../model/models/base_3.h5'
 # 이런 식으로 나중에 변경.
 vgg16_weight_path = 'vgg16_weight.h5'
 resnet_weight_path = 'resnet_weight.h5'
-ak_path = '../model/models/ak7_16.h5'  #jj_add / model path
+
 mobile_path = '../model/models/test_mobile_model.h5'  #jj_add / model path
 mobile_weight_path = '../model/models/test_mobile_weight.h5'  #jj_add / model path
 
@@ -56,66 +61,30 @@ input_img = None
 rect = None
 bounding_box = None
 
-def getCameraStreaming():
-    capture = cv2.VideoCapture(0)
-    global camera_width, camera_height
-    camera_width = capture.get(3)
-    camera_height = capture.get(4)
-    du.set_default_min_max_area(camera_width, camera_height)
-    if not capture:
-        print("Failed to capture video streaming")
-        sys.exit()
-    print("Successed to capture video streaming")
-    return capture
-
-def setDefaultCameraSetting():
-    cv2.startWindowThread()
-    cv2.namedWindow(winname=windowName)
-    cv2.setWindowProperty(winname=windowName, prop_id=cv2.WINDOW_FULLSCREEN, prop_value=cv2.WINDOW_FULLSCREEN)
-
 import matplotlib as mpl
 from scipy import signal
 
 class_emotion = ['angry','happy','neutral'] 
 mpl.style.use('seaborn')
 
-def load_plot_emotion_hist():
-    t= np.load('hist_emotion.npy')
-    t=t.reshape((-1,3))
+def plot_emotion_hist(emotion_hist):
+    #t= np.load(emotion_hist)
+    emotion_hist = np.array(emotion_hist)
+    t = emotion_hist.reshape((-1,3))
 
-    t = signal.resample(t, int(len(t)/10))
+    t = signal.resample(t, int(len(t)/5))
     x = np.arange(t.shape[0])
-    
-    plt.figure(0)
+        
     fig, ax = plt.subplots()
     
     for i in range(3):
         #name = cmaps[5][i]
         ax.plot(x,t[:,i], 'o-', label=class_emotion[i])
 
-    fig.legend(loc='lower left')
-    plt.show()
-    fig.savefig('loss_accuracy_plot')
-
-def plot_emotion_history(emotion_hist):
-    fig, ax = plt.subplots()
-    ax.cla()
-    #ax.imshow()
-    emotion_hist= np.array(emotion_hist)
-    reshaped_emotion = emotion_hist.reshape((-1,3))
-    x = np.arange(reshaped_emotion.shape[0])    
-        
-    fig, ax = plt.subplots()
-    
-    for i in range(3):
-        #name = cmaps[5][i]
-        ax.plot(x,reshaped_emotion[:,i], 'o', label=class_emotion[i])
-    
-    fig.legend(loc='lower left')
-
-    ax.set_title("frame {}".format(i))
-    # Note that using time.sleep does *not* work here!
-    plt.pause(0.1)
+    fig.legend(loc='upper left')
+    fig.savefig('../data/plot_emotion_hist')
+    fig.show()    
+    plt.pause(2)
 
 def getCameraStreaming():
     capture = cv2.VideoCapture(0)
@@ -180,13 +149,14 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
         elif key == ord('q'):
             time_now = datetime.now().strftime('%Y%m%d_%H%M%S') # save and plot emotion history
             np.save('../data/'+time_now+'hist_emotion.npy',emotion_hist) 
-            load_plot_emotion_hist()
+            plot_emotion_hist(emotion_hist)
             break
+        
         elif key%256 == 32:  # jj_add / press space bar to save cropped gray image
             try:
                 time_now = datetime.now().strftime('%Y%m%d_%H%M%S')
                 img_name = '../data/'+time_now+"_cropped_gray_{}.png".format(img_counter)
-                cv2.imwrite(img_name, np.squeeze(input_img))
+                cv2.imwrite(img_name, np.squeeze(input_img*255.))  # to recover normalized img to save as gray scale image
                 print("{} written!".format(img_name))
                 img_counter += 1
             except:
@@ -215,8 +185,9 @@ def refreshScreen(frame):
         du.draw_landmark(frame, rect)
     # if bounding_box is not None:
     du.drawFace(frame, bounding_box)
-    cv2.imshow(windowName, frame)
-
+    #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    #frame = clahe.apply(frame)
+    cv2.imshow(windowName, frame)       
 
 def buildNet(weights_file):
     return baseNet.BaseNet(weights_file)
@@ -224,7 +195,8 @@ def buildNet(weights_file):
 
 def chooseWeight(model_name):
     if model_name == 'basenet':
-        return basenet_weight_path, emotion_7_class
+        emotion=['Angry','Happy','Neutral']
+        return basenet_weight_path, emotion
     elif model_name == 'vgg16':
         return vgg16_weight_path
     elif model_name == 'resnet':
@@ -232,6 +204,9 @@ def chooseWeight(model_name):
     elif model_name=='ak':
         emotion=['Angry','Happy','Neutral']  ## jj_add /  3 emotion classes for ak net. return path and emotion classes
         return ak_path, emotion
+    elif model_name=='ak_weak':
+        emotion=['Angry','Happy','Neutral']  ## jj_add /  3 emotion classes for ak net. return path and emotion classes
+        return ak_weak_path, emotion
     elif model_name=='mobile':
         emotion=['Angry','Happy','Neutral']
         return [mobile_path, mobile_weight_path], emotion
@@ -242,16 +217,15 @@ def main():
     print("Start main() function.")
     model_weight_path, emotion = chooseWeight(model_name)
     color_ch =1  # default for gray
-
-    if model_name =='ak':   ## jj_add /  if model name is ak, than just load_model (without compile?)
-        model = load_model(model_weight_path)
-    elif model_name =='mobile':
+    
+    if model_name =='mobile':  # mobilenet needs custom object
         with CustomObjectScope({'relu6': keras.layers.ReLU(6.),'DepthwiseConv2D': keras.layers.DepthwiseConv2D}):
             model = load_model(model_weight_path[0])
         model.load_weights(model_weight_path[1])
         color_ch = 3
     else:
-        model = buildNet(model_weight_path)
+        model = load_model(model_weight_path)
+        #model = buildNet(model_weight_path)
 
     capture = getCameraStreaming()
     setDefaultCameraSetting()

@@ -8,6 +8,8 @@ Real-time analysis and notification system of driver's sleepiness and emotional 
   - Minyoung Jang
   - Heonyoung Lim
   - Jinyoung Han
+  - Jisu Han
+  - Sumin Lim (TA)
 
 ## Requirements
 Initial requirements are as follows.
@@ -20,7 +22,7 @@ Initial requirements are as follows.
   imutils 0.5.0
   dlib 19.1.0
 ```
-Installation: 
+Installation:
 ```
-pip install -r requirements.txt 
+pip install -r requirements.txt
 ```
