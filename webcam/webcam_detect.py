@@ -66,7 +66,8 @@ import matplotlib as mpl
 from scipy import signal
 
 class_emotion = ['angry','happy','neutral'] 
-class_drowsy = ['eye blink speed', 'eye size ratio']
+#class_drowsy = ['eye blink speed', 'eye size ratio']
+class_drowsy = ['eye size']
 mpl.style.use('seaborn')
 
 def plot_hist(emotion_hist, class_hist):
@@ -84,7 +85,7 @@ def plot_hist(emotion_hist, class_hist):
     for i in range(n):
         #name = cmaps[5][i]
         ax.plot(x,t[:,i], 'o-', label=class_hist[i])
-    if n ==2:
+    if n ==1:
         name = 'drowsy'
     elif n==3:
         name = 'emotion'
@@ -93,25 +94,6 @@ def plot_hist(emotion_hist, class_hist):
     fig.savefig('../data/plot_'+name+'_hist')
     fig.show()    
     plt.pause(2)
-
-#def plot_emotion_hist(emotion_hist):
-#    #t= np.load(emotion_hist)
-#    emotion_hist = np.array(emotion_hist)
-#    t = emotion_hist.reshape((-1,3))
-#
-#    t = signal.resample(t, int(len(t)/5))
-#    x = np.arange(t.shape[0])
-#        
-#    fig, ax = plt.subplots()
-#    
-#    for i in range(3):
-#        #name = cmaps[5][i]
-#        ax.plot(x,t[:,i], 'o-', label=class_emotion[i])
-#
-#    fig.legend(loc='upper left')
-#    fig.savefig('../data/plot_emotion_hist')
-#    fig.show()    
-#    plt.pause(2)
 
 def getCameraStreaming():
     capture = cv2.VideoCapture(0)
@@ -147,7 +129,7 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
         if input_img is not None:
             result = model.predict(input_img)[0]
             index = int(np.argmax(result))
-
+            
             if du.repeat >= 56:
                 for i in range(len(emotion)):
                     #print("Emotion :{} / {} % ".format(emotion[i], round(result[i]*100, 2)))
@@ -159,11 +141,8 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
                 du.check_driver_emotion(frame)
                 
                 # eye history
-                eye_ratio = ear_out/(user_eye + 1e-10)  # to prevent divide by zero                               
-                drowsy_hist.append([eye_speed, eye_ratio])
-                #print(eye_speed) 
-                #drowsy_hist.append(eye_ratio)    # record drowsy status. eye blink speed, eye size ratio
-                #print(eye_ratio)
+                eye_size = ear_out  # to prevent divide by zero                               
+                drowsy_hist.append([eye_size])
                 
         refreshScreen(frame)
         key = cv2.waitKey(20)
@@ -200,7 +179,7 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
 def detect_area_driver(frame, face_coordinates, color_ch=1):
     global input_img, rect, bounding_box
     rect, bounding_box = du.checkFaceCoordinate(face_coordinates, isArea)
-    ear_out = du.drowsy_detection(frame, rect)
+    eye_speed, ear_out, user_eye = du.drowsy_detection(frame, rect)
 
     # 얼굴을 detection 한 경우.
     if bounding_box is not None and isContinue:
@@ -211,7 +190,10 @@ def detect_area_driver(frame, face_coordinates, color_ch=1):
             #input_img = np.expand_dims(input_img, axis=-1)
             input_img = np.stack((input_img,)*color_ch, -1 )
             #print(np.mean(input_img))
-    return ear_out
+    return eye_speed, ear_out, user_eye 
+
+
+
 
 
 def refreshScreen(frame):
