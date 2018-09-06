@@ -215,8 +215,9 @@ def refreshScreen(frame):
         du.draw_landmark(frame, rect)
     # if bounding_box is not None:
     du.drawFace(frame, bounding_box)
-    cv2.imshow(windowName, frame)
-
+    #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    #frame = clahe.apply(frame)
+    cv2.imshow(windowName, frame)       
 
 def buildNet(weights_file):
     return baseNet.BaseNet(weights_file)
