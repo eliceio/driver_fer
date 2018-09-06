@@ -26,7 +26,7 @@ class_emotion = ['angry','happy','neutral']
 mpl.style.use('seaborn')
 
 parser = argparse.ArgumentParser(description="운전자 졸음, 난폭 운전 예방 시스템")
-parser.add_argument('model', type=str, default='ak', choices=['ak','ak_weak', 'mobile','basenet', 'vgg16', 'resnet', 'ensemble'],
+parser.add_argument('model', type=str, default='ak', choices=['ak','ak_weak', 'ak8', 'mobile','basenet', 'vgg16', 'resnet', 'ensemble'],
                     help="운전자 감정 예측을 위한 모델을 선택")
 args = parser.parse_args()
 model_name = args.model
@@ -42,7 +42,7 @@ print(model_list)  # model list preparation
 
 ak_path = '../model/models/ak31_32.h5'  #jj_add / model path
 ak_weak_path = '../model/models/ak_weak_weak.h5'
-
+ak8_path = '../model/models/ak8.h5'
 basenet_weight_path = '../model/models/base_3.h5'
 # 이런 식으로 나중에 변경.
 vgg16_weight_path = 'vgg16_weight.h5'
@@ -225,6 +225,10 @@ def chooseWeight(model_name):
     elif model_name=='ak_weak':
         emotion=['Angry','Happy','Neutral']  ## jj_add /  3 emotion classes for ak net. return path and emotion classes
         return ak_weak_path, emotion
+    elif model_name=='ak8':
+        emotion=['Angry','Happy','Neutral']  ## jj_add /  3 emotion classes for ak net. return path and emotion classes
+        return ak8_path, emotion    
+    
     elif model_name=='mobile':
         emotion=['Angry','Happy','Neutral']
         return [mobile_path, mobile_weight_path], emotion
