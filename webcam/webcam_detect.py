@@ -14,11 +14,21 @@ from keras.utils.generic_utils import CustomObjectScope
 
 import os
 import glob
-
+import time
 from datetime import datetime
                 
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+
+import pickle
+import imutils
+import requests
+
+from imutils.video import VideoStream
+from scipy.misc import imsave
+
+import matplotlib.animation as animation
+from matplotlib import style
 
 clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
 
@@ -68,7 +78,7 @@ from scipy import signal
 class_emotion = ['angry','happy','neutral'] 
 #class_drowsy = ['eye blink speed', 'eye size ratio']
 class_drowsy = ['eye size']
-mpl.style.use('seaborn')
+mpl.style.use('ggplot')
 
 def plot_hist(emotion_hist, class_hist):
     #t= np.load(emotion_hist)
@@ -118,6 +128,22 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
     img_counter = 0  # jj_add / for counting images that are saved (option)
     emotion_hist = []
     drowsy_hist = []
+    
+    emotion_test=[]
+    plt.show()
+    axes = plt.gca()
+    xdata=[]
+    ydata=[]
+    axes.set_xlim(0, 100)
+    axes.set_ylim(-10, 110)
+   
+        #name = cmaps[5][i]
+    line1, = axes.plot(xdata,ydata , 'o-', label=class_emotion[0])
+    line2, = axes.plot(xdata,ydata , 'o-', label=class_emotion[1])
+    line3, = axes.plot(xdata,ydata, 'o-', label=class_emotion[2])
+    
+    plt.legend(loc='upper left')      
+        
     while True:
         input_img, rect, bounding_box = None, None, None
         ret, frame = capture.read()
@@ -135,7 +161,8 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
                     #print("Emotion :{} / {} % ".format(emotion[i], round(result[i]*100, 2)))
                     cv2.putText(frame, "{}: {}% ".format(emotion[i], round(result[i]*100, 2)), (5, 20+(i*20)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                     emotion_hist.append(round(result[i]*100,2)) # to record emotion status
-                    
+                emotion_test.append(result)
+                
                 cv2.putText(frame, "Driver emotion: {}".format(emotion[index]), (5, 20+(20*len(emotion))), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                 du.add_driver_emotion(index)
                 du.check_driver_emotion(frame)
@@ -143,6 +170,34 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
                 # eye history
                 eye_size = ear_out  # to prevent divide by zero                               
                 drowsy_hist.append([eye_size])
+                
+                ## live plot
+                n_emotion = len(emotion_test)
+                print(str(n_emotion)+'\n')
+                if n_emotion % 5 == 0:
+                    emotion_data = np.array(emotion_test)
+                    #x_n = np.shape(emotion_data)[0]
+                    xdata = np.array(range(n_emotion))
+                    
+                    # 3종류 감정 각각 누적 데이터 plot
+
+                    line1.set_xdata(xdata)
+                    line1.set_ydata(emotion_data[:,0]*100)
+                    
+                    line2.set_xdata(xdata)
+                    line2.set_ydata(emotion_data[:,1]*100)
+                    
+                    line3.set_xdata(xdata)
+                    line3.set_ydata(emotion_data[:,2]*100)
+                    
+                    axes.set_xlim(0, n_emotion)
+                    plt.draw()
+                    plt.pause(0.1)
+                    #time.sleep(0.1)
+                     
+                    # add this if you don't want l the window to disappear at the end
+                    #plt.show()
+            
                 
         refreshScreen(frame)
         key = cv2.waitKey(20)
