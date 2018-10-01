@@ -47,7 +47,7 @@ def crop_face(frame, face_coordinates):
     (x, y, w, h) = face_coordinates
     if check_resize_area(face_coordinates):
         cropped_img = frame[y - int(h / 4):y + h + int(h / 4), x - int(w / 4):x + w + int(w / 4)]
-        # cv2.imwrite('./0.png', cropped_img, params=[cv2.IMWRITE_PNG_COMPRESSION, 0])
+        cv2.imwrite('./face.jpg', cropped_img, params=[cv2.IMWRITE_PNG_COMPRESSION, 0])
         return cropped_img
     else:
         return None
@@ -66,7 +66,7 @@ def preprocess(img, face_coordinates, face_shape=(48, 48)):
         face_resize = cv2.resize(face, face_shape)
         face_gray = cv2.cvtColor(face_resize, cv2.COLOR_BGR2GRAY)
         face_gray = clahe.apply(face_gray)/ 255.  # histogram equalization & normalize (0~1)
-        cv2.imwrite('./123.png', face_gray, params=[cv2.IMWRITE_PNG_COMPRESSION, 0])
+        #cv2.imwrite('./123.png', face_gray, params=[cv2.IMWRITE_PNG_COMPRESSION, 0])
         return face_gray
     else:
         return None
