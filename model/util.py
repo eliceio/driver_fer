@@ -151,8 +151,8 @@ def load_sample_img(data_path, idx=0):
     list_dir = os.listdir(data_path)
     
     #np.random.shuffle(list_dir)
-    path_test = os.path.join(data_path, list_dir[idx],split_label[2])
-    print('\nRandom selection\n Subject:'+list_dir[0])
+    path_test = os.path.join(data_path, list_dir[idx],split_label[1])
+    print('\nRandom selection\n Subject:'+list_dir[idx])
     
     samples =[]
     
@@ -377,20 +377,20 @@ if __name__ == "__main__":
 #    print('Total Layer:{}'.format(total_layer))
 #    
 #    ####### gradCAM
-    model_path = './models/ak31_32.h5'
+    model_path = './models/ak8.h5'
     data_path = '../Data/'
     loaded_model = load_model(model_path)
-    n_subject = 7
-    for j in range(n_subject):
-        samples = load_sample_img(data_path, j)
-    
-        n_layer = 15
-        layer_idx = -4  # investigate layer start from ..
-        color_ch = 1    # 1 for gray, 3 for model use RGB 
-        print(len(samples))
-        for i, sample in enumerate(samples):
-            
-            plot_grad_cam(loaded_model, sample, pred_class=i, layer_idx = layer_idx, n_layer=n_layer, color_ch = color_ch, idx=j)
-            
+    n_subject = 1
+   # for j in range(n_subject):
+    samples = load_sample_img(data_path, 7)
+
+    n_layer = 15
+    layer_idx = -4  # investigate layer start from ..
+    color_ch = 1    # 1 for gray, 3 for model use RGB 
+    print(len(samples))
+    for i, sample in enumerate(samples):
+        
+        plot_grad_cam(loaded_model, sample, pred_class=i, layer_idx = layer_idx, n_layer=n_layer, color_ch = color_ch, idx=7)
+        
 
 

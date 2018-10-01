@@ -96,8 +96,9 @@ def load_faces_save_npy(data_path):
     
     print(x.shape)
     print(y.shape)
-    np.save('x_data_fer.npy', x)
-    np.save('y_data_fer.npy', y)
+    np.save('x_data_ta.npy', x)
+    np.save('y_data_ta.npy', y)
+    print(os.getcwd())
                     
     return x, y
 
@@ -390,12 +391,13 @@ def convert_csv_to_dlib():
 
 if __name__ == "__main__":
     print('Something start')
-    data_path = '/data/fer_ck_image/fer_3class/'
+    #data_path = '/data/fer_ck_image/fer_3class/'
+    data_path = '/github/fer/data/ta_total/'
     #os.chdir(data_path)
-    make_img_split(data_path)
+    #make_img_split(data_path)
     #cvt_csv2face()
     #load_fer_ck_save_npy(data_path)
-    #load_faces_save_npy(data_path)
+    load_faces_save_npy(data_path)
     
 
 #    model = load_model('/python/ak_3class_transfer.h5')
