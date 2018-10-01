@@ -33,7 +33,8 @@ from matplotlib import style
 clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
 
 class_emotion = ['angry','happy','neutral']
-mpl.style.use('seaborn')
+mpl.style.use('fivethirtyeight')
+#plt.style.context('fivethirtyeight'):
 
 parser = argparse.ArgumentParser(description="운전자 졸음, 난폭 운전 예방 시스템")
 parser.add_argument('model', type=str, default='ak', choices=['ak','ak_weak', 'ak8', 'mobile','basenet', 'vgg16', 'resnet', 'ensemble'],
@@ -80,7 +81,7 @@ from scipy import signal
 class_emotion = ['angry','happy','neutral']
 #class_drowsy = ['eye blink speed', 'eye size ratio']
 class_drowsy = ['eye size']
-mpl.style.use('ggplot')
+#mpl.style.use('ggplot')
 
 def plot_hist(emotion_hist, class_hist):
     #t= np.load(emotion_hist)
@@ -160,7 +161,7 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
 
             if du.repeat >= 56:
                 # serving
-                http_post()
+                http_post() # for serving
                 for i in range(len(emotion)):
                     #print("Emotion :{} / {} % ".format(emotion[i], round(result[i]*100, 2)))
                     cv2.putText(frame, "{}: {}% ".format(emotion[i], round(result[i]*100, 2)), (5, 20+(i*20)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
@@ -178,7 +179,7 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
                 ## live plot
                 n_emotion = len(emotion_test)
                 #print(str(n_emotion)+'\n')
-                if n_emotion % 5 == 0:
+                if n_emotion % 2 == 0:
                     emotion_data = np.array(emotion_test)
                     #x_n = np.shape(emotion_data)[0]
                     xdata = np.array(range(n_emotion))
