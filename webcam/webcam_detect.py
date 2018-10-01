@@ -16,7 +16,7 @@ import os
 import glob
 import time
 from datetime import datetime
-                
+
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 
@@ -32,7 +32,7 @@ from matplotlib import style
 
 clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
 
-class_emotion = ['angry','happy','neutral'] 
+class_emotion = ['angry','happy','neutral']
 mpl.style.use('seaborn')
 
 parser = argparse.ArgumentParser(description="운전자 졸음, 난폭 운전 예방 시스템")
@@ -72,26 +72,28 @@ input_img = None
 rect = None
 bounding_box = None
 
+model_url = 'http://143.248.92.116:8002/model/predict_images/images'
+
 import matplotlib as mpl
 from scipy import signal
 
-class_emotion = ['angry','happy','neutral'] 
+class_emotion = ['angry','happy','neutral']
 #class_drowsy = ['eye blink speed', 'eye size ratio']
 class_drowsy = ['eye size']
 mpl.style.use('ggplot')
 
 def plot_hist(emotion_hist, class_hist):
     #t= np.load(emotion_hist)
-    emotion_hist = np.array(emotion_hist)   
-    
+    emotion_hist = np.array(emotion_hist)
+
     n = len(class_hist)
     t = emotion_hist.reshape((-1,n))
 
     t = signal.resample(t, int(len(t)/5))
     x = np.arange(t.shape[0])
-        
+
     fig, ax = plt.subplots()
-    
+
     for i in range(n):
         #name = cmaps[5][i]
         ax.plot(x,t[:,i], 'o-', label=class_hist[i])
@@ -99,10 +101,10 @@ def plot_hist(emotion_hist, class_hist):
         name = 'drowsy'
     elif n==3:
         name = 'emotion'
-        
+
     fig.legend(loc='upper left')
     fig.savefig('../data/plot_'+name+'_hist')
-    fig.show()    
+    fig.show()
     plt.pause(2)
 
 def getCameraStreaming():
@@ -128,7 +130,7 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
     img_counter = 0  # jj_add / for counting images that are saved (option)
     emotion_hist = []
     drowsy_hist = []
-    
+
     emotion_test=[]
     plt.show()
     axes = plt.gca()
@@ -136,14 +138,14 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
     ydata=[]
     axes.set_xlim(0, 100)
     axes.set_ylim(-10, 110)
-   
+
         #name = cmaps[5][i]
     line1, = axes.plot(xdata,ydata , 'o-', label=class_emotion[0])
     line2, = axes.plot(xdata,ydata , 'o-', label=class_emotion[1])
     line3, = axes.plot(xdata,ydata, 'o-', label=class_emotion[2])
-    
-    plt.legend(loc='upper left')      
-        
+
+    plt.legend(loc='upper left')
+
     while True:
         input_img, rect, bounding_box = None, None, None
         ret, frame = capture.read()
@@ -155,50 +157,52 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
         if input_img is not None:
             result = model.predict(input_img)[0]
             index = int(np.argmax(result))
-            
+
             if du.repeat >= 56:
+                # serving
+                http_post()
                 for i in range(len(emotion)):
                     #print("Emotion :{} / {} % ".format(emotion[i], round(result[i]*100, 2)))
                     cv2.putText(frame, "{}: {}% ".format(emotion[i], round(result[i]*100, 2)), (5, 20+(i*20)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                     emotion_hist.append(round(result[i]*100,2)) # to record emotion status
                 emotion_test.append(result)
-                
+
                 cv2.putText(frame, "Driver emotion: {}".format(emotion[index]), (5, 20+(20*len(emotion))), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                 du.add_driver_emotion(index)
                 du.check_driver_emotion(frame)
-                
+
                 # eye history
-                eye_size = ear_out  # to prevent divide by zero                               
+                eye_size = ear_out  # to prevent divide by zero
                 drowsy_hist.append([eye_size])
-                
+
                 ## live plot
                 n_emotion = len(emotion_test)
-                print(str(n_emotion)+'\n')
+                #print(str(n_emotion)+'\n')
                 if n_emotion % 5 == 0:
                     emotion_data = np.array(emotion_test)
                     #x_n = np.shape(emotion_data)[0]
                     xdata = np.array(range(n_emotion))
-                    
+
                     # 3종류 감정 각각 누적 데이터 plot
 
                     line1.set_xdata(xdata)
                     line1.set_ydata(emotion_data[:,0]*100)
-                    
+
                     line2.set_xdata(xdata)
                     line2.set_ydata(emotion_data[:,1]*100)
-                    
+
                     line3.set_xdata(xdata)
                     line3.set_ydata(emotion_data[:,2]*100)
-                    
+
                     axes.set_xlim(0, n_emotion)
                     plt.draw()
                     plt.pause(0.1)
                     #time.sleep(0.1)
-                     
+
                     # add this if you don't want l the window to disappear at the end
                     #plt.show()
-            
-                
+
+
         refreshScreen(frame)
         key = cv2.waitKey(20)
         if key == ord('s'):
@@ -215,12 +219,12 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
             du.reset_global_value()
         elif key == ord('q'):
             time_now = datetime.now().strftime('%Y%m%d_%H%M%S') # save and plot emotion history
-            np.save('../data/'+time_now+'hist_emotion.npy',emotion_hist) 
+            np.save('../data/'+time_now+'hist_emotion.npy',emotion_hist)
             plot_hist(emotion_hist, class_emotion)
-            np.save('../data/'+time_now+'hist_drowsy.npy',drowsy_hist) 
-            plot_hist(drowsy_hist, class_drowsy)            
+            np.save('../data/'+time_now+'hist_drowsy.npy',drowsy_hist)
+            plot_hist(drowsy_hist, class_drowsy)
             break
-        
+
         elif key%256 == 32:  # jj_add / press space bar to save cropped gray image
             try:
                 time_now = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -245,10 +249,19 @@ def detect_area_driver(frame, face_coordinates, color_ch=1):
             #input_img = np.expand_dims(input_img, axis=-1)
             input_img = np.stack((input_img,)*color_ch, -1 )
             #print(np.mean(input_img))
-    return eye_speed, ear_out, user_eye 
+    return eye_speed, ear_out, user_eye
 
 
+def http_post():
+    #model_url = 'http://143.248.92.116:8002/model/predict_images/images'
 
+    with open('./face.jpg', 'rb') as jpeg_file:
+        jpeg_bytes = jpeg_file.read()
+        rsp = requests.post(model_url, data=jpeg_bytes,
+                            headers={'Content-Type': 'image/jpeg'})
+        print(rsp.status_code, rsp.reason)
+        print(rsp.headers)
+        print(rsp.text)
 
 
 def refreshScreen(frame):
@@ -260,7 +273,7 @@ def refreshScreen(frame):
     du.drawFace(frame, bounding_box)
     #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     #frame = clahe.apply(frame)
-    cv2.imshow(windowName, frame)       
+    cv2.imshow(windowName, frame)
 
 def buildNet(weights_file):
     return baseNet.BaseNet(weights_file)
@@ -282,8 +295,8 @@ def chooseWeight(model_name):
         return ak_weak_path, emotion
     elif model_name=='ak8':
         emotion=['Angry','Happy','Neutral']  ## jj_add /  3 emotion classes for ak net. return path and emotion classes
-        return ak8_path, emotion    
-    
+        return ak8_path, emotion
+
     elif model_name=='mobile':
         emotion=['Angry','Happy','Neutral']
         return [mobile_path, mobile_weight_path], emotion
@@ -294,7 +307,7 @@ def main():
     print("Start main() function.")
     model_weight_path, emotion = chooseWeight(model_name)
     color_ch =1  # default for gray
-    
+
     if model_name =='mobile':  # mobilenet needs custom object
         with CustomObjectScope({'relu6': keras.layers.ReLU(6.),'DepthwiseConv2D': keras.layers.DepthwiseConv2D}):
             model = load_model(model_weight_path[0])
