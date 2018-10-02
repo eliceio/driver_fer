@@ -81,11 +81,10 @@ from scipy import signal
 class_emotion = ['angry','happy','neutral']
 #class_drowsy = ['eye blink speed', 'eye size ratio']
 class_drowsy = ['eye size']
-#mpl.style.use('ggplot')
+
 
 def plot_hist(emotion_hist, class_hist):
-    #t= np.load(emotion_hist)
-    emotion_hist = np.array(emotion_hist)
+    emotion_hist = np.array(emotion_hist)*100 # % 로 표현
 
     n = len(class_hist)
     t = emotion_hist.reshape((-1,n))
@@ -96,14 +95,17 @@ def plot_hist(emotion_hist, class_hist):
     fig, ax = plt.subplots()
 
     for i in range(n):
-        #name = cmaps[5][i]
         ax.plot(x,t[:,i], 'o-', label=class_hist[i])
     if n ==1:
         name = 'drowsy'
+        ax.set(title = 'Drowsy history', ylabel = 'eye size', xlabel = 'Time')
     elif n==3:
+        ax.set(title = 'Emotion history', ylabel = 'Prediction (%)', xlabel = 'Time')
+        #ax = plt.axes(xlim=(0,100), ylim=(-10, 150))
         name = 'emotion'
 
-    fig.legend(loc='upper left')
+    fig.legend(loc='upper right')
+    fig.tight_layout()
     fig.savefig('../data/plot_'+name+'_hist')
     fig.show()
     plt.pause(2)
@@ -131,21 +133,29 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
     img_counter = 0  # jj_add / for counting images that are saved (option)
     emotion_hist = []
     drowsy_hist = []
+    
+    
+    #### For live plot
 
-    emotion_test=[]
-    plt.show()
-    axes = plt.gca()
-    xdata=[]
-    ydata=[]
-    axes.set_xlim(0, 100)
-    axes.set_ylim(-10, 110)
+    #plt.show()
+    
+    line1=[]
+    line2=[]
+    line3=[]
+    list_line=[line1,line2,line3]
+    
+    fig = plt.figure()
+    ax = plt.axes(xlim=(0,100), ylim=(-10, 150))
+    ax.set(title = 'Emotion history', ylabel = 'Prediction (%)', xlabel = 'Time')
+    #axes = plt.gca()   
+    
+    for i in range(3):
+        list_line[i], = ax.plot([],[] , 'o-', label=class_emotion[i])
 
-        #name = cmaps[5][i]
-    line1, = axes.plot(xdata,ydata , 'o-', label=class_emotion[0])
-    line2, = axes.plot(xdata,ydata , 'o-', label=class_emotion[1])
-    line3, = axes.plot(xdata,ydata, 'o-', label=class_emotion[2])
-
-    plt.legend(loc='upper left')
+    ax.legend(loc='upper right')
+    
+    
+    ###############
 
     while True:
         input_img, rect, bounding_box = None, None, None
@@ -161,48 +171,42 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
 
             if du.repeat >= 56:
                 # serving
-                http_post() # for serving
+                #http_post() # for serving
                 for i in range(len(emotion)):
                     #print("Emotion :{} / {} % ".format(emotion[i], round(result[i]*100, 2)))
                     cv2.putText(frame, "{}: {}% ".format(emotion[i], round(result[i]*100, 2)), (5, 20+(i*20)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-                    emotion_hist.append(round(result[i]*100,2)) # to record emotion status
-                emotion_test.append(result)
-
+                    
                 cv2.putText(frame, "Driver emotion: {}".format(emotion[index]), (5, 20+(20*len(emotion))), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                 du.add_driver_emotion(index)
                 du.check_driver_emotion(frame)
 
-                # eye history
+                # History saving
+                emotion_hist.append(result)  # to track emotion history 
                 eye_size = ear_out  # to prevent divide by zero
-                drowsy_hist.append([eye_size])
-
+                drowsy_hist.append([eye_size])  #eye history
+             
                 ## live plot
-                n_emotion = len(emotion_test)
+                n_emotion = len(emotion_hist)
                 #print(str(n_emotion)+'\n')
-                if n_emotion % 2 == 0:
-                    emotion_data = np.array(emotion_test)
+                
+                if n_emotion % 4 == 0:
+                    emotion_data = np.array(emotion_hist)
                     #x_n = np.shape(emotion_data)[0]
                     xdata = np.array(range(n_emotion))
 
                     # 3종류 감정 각각 누적 데이터 plot
+                    for i in range(3):
+                        list_line[i].set_data(xdata, emotion_data[:,i]*100)
 
-                    line1.set_xdata(xdata)
-                    line1.set_ydata(emotion_data[:,0]*100)
-
-                    line2.set_xdata(xdata)
-                    line2.set_ydata(emotion_data[:,1]*100)
-
-                    line3.set_xdata(xdata)
-                    line3.set_ydata(emotion_data[:,2]*100)
-
-                    axes.set_xlim(0, n_emotion)
+                    ax.set_xlim(0, n_emotion)
+                    fig.tight_layout()
+                    
                     plt.draw()
                     plt.pause(0.1)
                     #time.sleep(0.1)
 
                     # add this if you don't want l the window to disappear at the end
                     #plt.show()
-
 
         refreshScreen(frame)
         key = cv2.waitKey(20)
@@ -224,6 +228,7 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
             plot_hist(emotion_hist, class_emotion)
             np.save('../data/'+time_now+'hist_drowsy.npy',drowsy_hist)
             plot_hist(drowsy_hist, class_drowsy)
+            
             break
 
         elif key%256 == 32:  # jj_add / press space bar to save cropped gray image
