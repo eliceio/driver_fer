@@ -149,12 +149,15 @@ if __name__ == '__main__':
     #os.chdir(data_path) # change directory. autokeras wiil be stored here.
     # 1. data load
     print('\n#####################\nload data\n')
-    load_img_save_npy(data_path)
+    #load_img_save_npy(data_path)
     print('\n#####################\nSave as npy\n')
-          
-    x_data = np.load('./x_data.npy')  # 7 means total 7 members, not 7 emotion classes :)
-    y_data = np.load('./y_data.npy')    
+     
+    data_path = '/Data/fer_ck_cam_3_img/_fer_cam/'
+    os.chdir(data_path)
+    x_data = np.load('./x_data_fer_ck_cam.npy')  # 7 means total 7 members, not 7 emotion classes :)
+    y_data = np.load('./y_data_fer_ck_cam.npy')    
     print('\n#####################\nload npy\n')
+    os.chdir('/python/autokeras/')
     
     x_data = x_data.reshape(-1, target_size, target_size,1)
     

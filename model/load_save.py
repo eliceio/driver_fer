@@ -26,12 +26,69 @@ import shutil
 clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))      
 class_label = ['angry', 'happy','neutral']
 #class_label = ['angry', 'disgust', 'fear','happy','sad','surprise','neutral']
-split_label = ['train', 'validation', 'test']
+#split_label = ['train', 'validation', 'test']
+split_label = ['train', 'test']
 n_class = len(class_label)
 
 path = '/data/'
 file_name = 'fer2013_processed.csv'
 
+
+def put_dir(now_path):  # to put all different folders (ex- test, train, val, ...) into just distinct classes
+    count = 0 
+    count2 = 0
+    for (path, dir, files) in os.walk(now_path):
+        print('\n{}'.format(count))
+        count += 1
+        
+        emotion_bool = [i in path for i in class_label] ## temp[i] 에 i 가 속해있기만 하면 true 
+        #emotion_bool.index(true)
+        
+        if any(emotion_bool): # 어떤 emotion 폴더 감지되면
+            idx_emotion = emotion_bool.index(True)
+            new_path = os.path.join(now_path,class_label[idx_emotion])
+            if not os.path.exists(new_path):  # 폴더 없으면 생성
+                os.makedirs(new_path)
+            print(len(files))
+            for file in files:
+                new_file = os.path.join(new_path,file)
+                src_file = os.path.join(path,file)
+                if os.path.isfile(new_file):
+                    count2 +=1
+                    print('\n')
+                    print(count2)
+                    new_file = new_path + '/new_'+ str(count2)+file
+                    print(new_file)
+                shutil.copy2(src_file, new_file)
+            
+        
+    
+    
+
+def balance_dist(now_path = './', ratio = 0.35):
+    #files = glob.glob(final_path+'/*.png')
+    
+    
+    for (path, dir, files) in os.walk(now_path):
+        n_files = len(files)
+        n_final = int(n_files*ratio)   # file 을 이만큼 남기고 지울것
+        
+        #n_final = 4000
+        np.random.shuffle(files)
+        for filename in files:
+            
+            ext = os.path.splitext(filename)[-1]
+            if ext == '.png':
+                #print("%s/%s" % (path, filename))
+                fullname = os.path.join(path, filename)
+                os.remove(fullname)
+                
+            n_current = len(glob.glob(path+'/*.png'))
+            if n_current <= n_final:  # 원한만큼 지우면 그만.
+                print('\n dist:{}\n'.format(n_current))
+                break
+    
+    
 
 def make_img_split(path):
     
@@ -72,6 +129,7 @@ def preprocess_img(img_path):
     img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)  #load img as grayscale
     img = clahe.apply(img)  # histogram equalization
     img = np.array(img)/255.  # normalize
+    
     return img
 
 def load_faces_save_npy(data_path):
@@ -96,8 +154,8 @@ def load_faces_save_npy(data_path):
     
     print(x.shape)
     print(y.shape)
-    np.save('x_data_ta.npy', x)
-    np.save('y_data_ta.npy', y)
+    np.save('x_data_fer_ck_cam.npy', x)
+    np.save('y_data_fer_ck_cam.npy', y)
     print(os.getcwd())
                     
     return x, y
@@ -131,8 +189,8 @@ def load_fer_ck_save_npy(data_path):
     print(x.shape)
     print(y.shape)
     
-    np.save('x_data_ferck7.npy', x)
-    np.save('y_data_ferck7.npy', y)
+    np.save('x_data_ferckcam.npy', x)
+    np.save('y_data_ferckcam.npy', y)
                     
     return x, y
 
@@ -391,14 +449,23 @@ def convert_csv_to_dlib():
 
 if __name__ == "__main__":
     print('Something start')
-    #data_path = '/data/fer_ck_image/fer_3class/'
-    data_path = '/github/fer/data/ta_total/'
-    #os.chdir(data_path)
+    data_path = '/Data/fer_ck_cam_3_img/_fer_cam/'
+    #data_path = '/github/fer/data/ta_total/'
+    os.chdir(data_path)
     #make_img_split(data_path)
-    #cvt_csv2face()
+    
     #load_fer_ck_save_npy(data_path)
+    
     load_faces_save_npy(data_path)
     
+    
+    #d_p = '/Data/fer_ck_cam_3_img/webcam_data/'
+    #d_p = '/Data/fer_ck_cam_3_img/fer_3class/'
+    #balance_dist(now_path = d_p)
+    #put_dir(d_p)    
+#    list_dir = os.listdir(d_p)
+#    for d in list_dir:
+#        put_dir(os.path.join(d_p,d))
 
 #    model = load_model('/python/ak_3class_transfer.h5')
 #    model_name = 'ak_3class_transfer'
