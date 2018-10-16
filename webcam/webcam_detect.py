@@ -31,6 +31,8 @@ import matplotlib.animation as animation
 from matplotlib import style
 from io import StringIO
 
+import json
+
 clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
 
 class_emotion = ['angry','happy','neutral']
@@ -68,6 +70,8 @@ emotion_7_class = ['Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neut
 isContinue = True
 isArea = True
 isLandmark = False
+isServing = True
+isGragh = False
 camera_width = 0
 camera_height = 0
 input_img = None
@@ -83,6 +87,7 @@ from scipy import signal
 class_emotion = ['angry','happy','neutral']
 #class_drowsy = ['eye blink speed', 'eye size ratio']
 class_drowsy = ['eye size']
+result = []
 
 
 def plot_hist(emotion_hist, class_hist):
@@ -130,33 +135,33 @@ def setDefaultCameraSetting():
     cv2.setWindowProperty(winname=windowName, prop_id=cv2.WINDOW_FULLSCREEN, prop_value=cv2.WINDOW_FULLSCREEN)
 
 def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for different emotion class models
-    global isContinue, isArea, isLandmark, input_img, rect, bounding_box
+    global isContinue, isServing, isGragh, isArea, isLandmark, input_img, rect, bounding_box, result
 
     img_counter = 0  # jj_add / for counting images that are saved (option)
     emotion_hist = []
     drowsy_hist = []
-    
-    
+
+
     #### For live plot
 
     #plt.show()
-    
+
     line1=[]
     line2=[]
     line3=[]
     list_line=[line1,line2,line3]
-    
+
     fig = plt.figure()
     ax = plt.axes(xlim=(0,100), ylim=(-10, 150))
     ax.set(title = 'Emotion history', ylabel = 'Prediction (%)', xlabel = 'Time')
-    #axes = plt.gca()   
-    
+    #axes = plt.gca()
+
     for i in range(3):
         list_line[i], = ax.plot([],[] , 'o-', label=class_emotion[i])
 
     ax.legend(loc='upper right')
-    
-    
+
+
     ###############
 
     while True:
@@ -168,54 +173,61 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
             eye_speed, ear_out, user_eye = detect_area_driver(frame, face_coordinates,color_ch)
 
         if input_img is not None:
-            result = model.predict(input_img)[0]
-            result2 = http_post_array(input_img) # for serving
-            index = int(np.argmax(result))
 
             if du.repeat >= 56:
-                # serving
-                #http_post() # for serving
-                
+                if isServing: # serving 이 무조건 된다는 조건임...
+                    http_post_array(input_img) # for serving
+                    cv2.putText(frame, "Serving mode", (int(camera_width*0.05), int(camera_height*0.95)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                else:
+                    result = model.predict(input_img)[0]
+                    cv2.putText(frame, "Local mode", (int(camera_width*0.05), int(camera_height*0.95)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                index = int(np.argmax(result))
+
                 for i in range(len(emotion)):
                     #print("Emotion :{} / {} % ".format(emotion[i], round(result[i]*100, 2)))
                     cv2.putText(frame, "{}: {}% ".format(emotion[i], round(result[i]*100, 2)), (5, 20+(i*20)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-                    
+
                 cv2.putText(frame, "Driver emotion: {}".format(emotion[index]), (5, 20+(20*len(emotion))), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                 du.add_driver_emotion(index)
                 du.check_driver_emotion(frame)
 
-                # History saving
-                emotion_hist.append(result)  # to track emotion history 
-                eye_size = ear_out  # to prevent divide by zero
-                drowsy_hist.append([eye_size])  #eye history
-             
-                ## live plot
-                n_emotion = len(emotion_hist)
-                #print(str(n_emotion)+'\n')
-                
-                if n_emotion % 4 == 0:
-                    emotion_data = np.array(emotion_hist)
-                    #x_n = np.shape(emotion_data)[0]
-                    xdata = np.array(range(n_emotion))
+                if isGragh:
+                    # History saving
+                    emotion_hist.append(result)  # to track emotion history
+                    eye_size = ear_out  # to prevent divide by zero
+                    drowsy_hist.append([eye_size])  #eye history
 
-                    # 3종류 감정 각각 누적 데이터 plot
-                    for i in range(3):
-                        list_line[i].set_data(xdata, emotion_data[:,i]*100)
+                    ## live plot
+                    n_emotion = len(emotion_hist)
+                    #print(str(n_emotion)+'\n')
 
-                    ax.set_xlim(0, n_emotion)
-                    fig.tight_layout()
-                    
-                    plt.draw()
-                    plt.pause(0.1)
-                    #time.sleep(0.1)
+                    if n_emotion % 4 == 0:
+                        emotion_data = np.array(emotion_hist)
+                        #x_n = np.shape(emotion_data)[0]
+                        xdata = np.array(range(n_emotion))
 
-                    # add this if you don't want l the window to disappear at the end
-                    #plt.show()
+                        # 3종류 감정 각각 누적 데이터 plot
+                        for i in range(3):
+                            list_line[i].set_data(xdata, emotion_data[:,i]*100)
+
+                        ax.set_xlim(0, n_emotion)
+                        fig.tight_layout()
+
+                        plt.draw()
+                        plt.pause(0.1)
+                        #time.sleep(0.1)
+
+                        # add this if you don't want l the window to disappear at the end
+                        #plt.show()
 
         refreshScreen(frame)
         key = cv2.waitKey(20)
         if key == ord('s'):
             isContinue = not isContinue
+        elif key == ord('m'): # change serving mode, local model mode
+            isServing = not isServing
+        elif key == ord('g'):
+            isGragh = not isGragh
         elif key == ord('c'):
             isArea = not isArea
         elif key == ord('l'):
@@ -232,7 +244,7 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
             plot_hist(emotion_hist, class_emotion)
             np.save('../data/'+time_now+'hist_drowsy.npy',drowsy_hist)
             plot_hist(drowsy_hist, class_drowsy)
-            
+
             break
 
         elif key%256 == 32:  # jj_add / press space bar to save cropped gray image
@@ -262,17 +274,19 @@ def detect_area_driver(frame, face_coordinates, color_ch=1):
     return eye_speed, ear_out, user_eye
 
 def http_post_array(data):
+    global result
     data = np.squeeze(data, axis=0)
     data = np.squeeze(data, axis=2)
     s = StringIO()
     np.savetxt(s, data, delimiter=',')
     csv_str = s.getvalue()
-    
+
     rsp = requests.post(model_url, data=csv_str,
                         headers={'Content-Type': 'text/csv'})
     print(rsp.status_code, rsp.reason)
     print(rsp.headers)
-    print(rsp.text)    
+    d = json.loads(rsp.text)
+    result = d['outputs']['activation_4_2/Softmax:0']['floatVal']
 
 def http_post():
     #model_url = 'http://143.248.92.116:8002/model/serving_default/input_image'
