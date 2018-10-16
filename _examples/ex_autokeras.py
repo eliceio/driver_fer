@@ -30,31 +30,6 @@ class_label = ['angry', 'happy','neutral']
 target_size = 48    # img_size
 clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 
-#def data_arrange(x_data,y_data):
-#    # data class re-arrange
-#    
-#    # Angry vs neutral case
-#    x_angry = x_data[y_data==0]
-#    x_happy = x_data[y_data==3]
-#    x_neutral = x_data[y_data==6]
-#    y_angry = y_data[y_data==0]
-#    y_happy = y_data[y_data==3]
-#    y_neutral = y_data[y_data==6]
-#    
-#    # number of happy samples are twice  
-#    # To avoid class distribution bias
-#    x_happy_use, x_no, y_happy_use, y_no = train_test_split(x_happy, y_happy, test_size = 0.5, shuffle = True, random_state=33)
-#    
-#    #print('Before normalize:{a}\n'.format(a= x_angry[0]))
-#    xx = np.concatenate((x_angry, x_happy_use, x_neutral),axis=0)/255.0 #concatenate & normalized
-#    yy = np.concatenate((y_angry, y_happy_use, y_neutral), axis=0)
-#    yy[yy==3]=1
-#    yy[yy==6]=2
-#    
-#    xx = xx.reshape(-1, 48,48,1)
-#    print('After normalize:{a}\n'.format(a= xx[0]))
-#
-#    return xx, yy   
 
 def preprocess_img(img_path):
     img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)  #load img as grayscale
@@ -107,7 +82,7 @@ def model_fit(x_train, y_train, resume = True, iter_num=10, time_limit = 12):
     print('out: ', out)
     return clf
     
-def final_fit(clf, x_train, y_train, x_test, y_test, iter_num =2):
+def final_fit(clf, x_train, y_train, x_test, y_test, iter_num =5):
     print('final fit')
     final_out = clf.final_fit(x_train, y_train, x_test, y_test, retrain=False, trainer_args={'max_iter_num':iter_num})
     print('final out: ', final_out)
@@ -152,12 +127,25 @@ if __name__ == '__main__':
     #load_img_save_npy(data_path)
     print('\n#####################\nSave as npy\n')
      
-    data_path = '/Data/fer_ck_cam_3_img/_fer_cam/'
+    class_label = ['background', 'body','nose', 'tail']
+    
+    #data_path = '/Data/_backup/img_fer_ck_cam_3class/'
+    
+    #### aug
+    #data_path = '/github/fer/data/jungjoon/test/angry/'
+    #data_path = '/Data/mice_processed'
+    
+          
+    data_path = '/Data/mice_processed/'
     os.chdir(data_path)
-    x_data = np.load('./x_data_fer_ck_cam.npy')  # 7 means total 7 members, not 7 emotion classes :)
-    y_data = np.load('./y_data_fer_ck_cam.npy')    
+    list_files = os.listdir(data_path)
+    
+    x_data = np.load('./x_data_mice.npy')  # 7 means total 7 members, not 7 emotion classes :)
+    y_data = np.load('./y_data_mice.npy')    
     print('\n#####################\nload npy\n')
     os.chdir('/python/autokeras/')
+    
+    target_size=40
     
     x_data = x_data.reshape(-1, target_size, target_size,1)
     
@@ -172,4 +160,4 @@ if __name__ == '__main__':
     
     print('\nFinal fit start.\n')
     final_fit(clf, x_train, y_train, x_test, y_test)
-    show_and_save_best_model(clf, model_name='ak_model.h5')
+    show_and_save_best_model(clf, model_name='ak_model_mice.h5')
