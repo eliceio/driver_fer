@@ -143,7 +143,7 @@ def load_faces_save_npy(data_path):
     
     for k, k_class in enumerate(class_label):
         final_path = os.path.join(data_path, k_class)
-        files = glob.glob(final_path+'/*.png')
+        files = glob.glob(final_path+'/*.*')
         for file in files:
             img = preprocess_img(file)
             x.append(img)
@@ -394,6 +394,9 @@ def cvt_csv2face():
         #params for PNG, low value means low compression, big file size.(0 to 9)
 
 # make face picture with dlib 68 face landmarks from csv fer2013 data. on-going.
+        
+
+
 def convert_csv_to_dlib():
     print("convert csv to face dlib data start.\n")
     print('Dlib face generation start.\n')
@@ -449,7 +452,8 @@ def convert_csv_to_dlib():
 
 if __name__ == "__main__":
     print('Something start')
-    data_path = '/Data/fer_ck_cam_3_img/_fer_cam/'
+    #data_path = '/Data/fer_ck_cam_3_img/_fer_ck/'
+    data_path = '/Data/_backup/img_fer_ck_cam_3class/'
     #data_path = '/github/fer/data/ta_total/'
     os.chdir(data_path)
     #make_img_split(data_path)

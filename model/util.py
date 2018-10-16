@@ -45,7 +45,7 @@ K.set_learning_phase(False)
 
 class_label = ['angry', 'happy', 'neutral']
 n_class = len(class_label)
-img_size = 48
+img_size = 40
 
 data_path = '../data'
 # to match the size, dimension, and color channel.
@@ -79,13 +79,15 @@ def grad_cam(model, img_arr, img_tensor, class_idx, layer_idx):
     
     weights = np.mean(grad_val, axis=(0, 1))
     cam = np.dot(conv_output, weights)
+    cam_raw = np.reshape(cam,(1,-1)) # original cam output
+    
     cam = cv2.resize(cam, (img_size, img_size))
     
     # relu 
-    cam = np.maximum(cam, 0)    
+    cam = np.maximum(cam, 0)        
     cam = cam / (cam.max() + 1e-10) # To prevent divide by zero
     
-    return cam, predictions
+    return cam_raw, cam, predictions
 
 def plot_grad_cam(model, img, pred_class, layer_idx = -3, n_layer =1, color_ch = 1, idx=0):
     # idx = subject id of name for save plot
@@ -103,11 +105,11 @@ def plot_grad_cam(model, img, pred_class, layer_idx = -3, n_layer =1, color_ch =
     fig, axes = plt.subplots(n_row ,n_col, figsize=(10, 15))
     axes = axes.flatten()
     #for i in range(n_layer):
-    
+    cam_data =[]
     #top3 = np.argpartition(pred_values, -3)[-3:]  #top 4
-    if n_layer >1:
+    if n_layer >1: # plot multiple cases
         for i in range(n_layer):
-            cam, predictions = grad_cam(model, img_arr, img_tensor,  pred_class, layer_idx-i) #in case of model class, model.model
+            cam_raw, cam, predictions = grad_cam(model, img_arr, img_tensor,  pred_class, layer_idx-i) #in case of model class, model.model
             
             pred_values = np.squeeze(predictions, 0)
             top1 = np.argmax(pred_values)
@@ -119,19 +121,23 @@ def plot_grad_cam(model, img, pred_class, layer_idx = -3, n_layer =1, color_ch =
             axes[i].imshow(cam, cmap = 'jet', alpha = 0.5)
             #axes[0,i].axis('off')
             axes[i].axis('off')
-            axes[i].set_title("Layer idx:{}\n{}\n".format(layer_idx_i, layer_name), fontsize=10)        
-    else:
-        cam, predictions = grad_cam(model, img_arr, img_tensor,  pred_class, layer_idx) #in case of model class, model.model
+            axes[i].set_title("Layer idx:{}\n{}\n".format(layer_idx_i, layer_name), fontsize=10)
+            cam_data.append(cam_raw)
+    else: # plot only single case
+        cam_raw, cam, predictions = grad_cam(model, img_arr, img_tensor,  pred_class, layer_idx) #in case of model class, model.model
         
         pred_values = np.squeeze(predictions, 0)
         top1 = np.argmax(pred_values)
         #top1_value = np.round(float(pred_values[top1]*100), decimals = 4)
-        #axes[0].imshow(img_arr, cmap = 'gray')
         axes[0].imshow(img_arr, cmap = 'gray')
         axes[0].imshow(cam, cmap = 'jet', alpha = 0.5)
-    
-        #axes[0].axis('off')
         axes[0].axis('off')
+        cam_data.append(cam_raw)
+    
+    n_diff = n_row*n_col-n_layer
+
+    for j in range(n_diff):
+        axes[n_layer+j].axis('off')
 
     #axes[0].set_title("Pred:{}{}%\n True:{}\n".format(class_label[top1], top1_value, class_label[pred_class] ), fontsize=10)
                 
@@ -140,26 +146,29 @@ def plot_grad_cam(model, img, pred_class, layer_idx = -3, n_layer =1, color_ch =
     
     fig.savefig(str(idx)+'gradCAM_'+class_label[pred_class]+'.png',bbox_inches='tight',dpi=300)
     print(class_label[pred_class])
+    #cam_arr = np.array(cam_data)
+    #np.save('./cam_arr.npy', cam_arr)
+   # print(cam_arr.shape)
     
 
  # ex) img, cam, predictions = grad_cam(ak_net_0, img_path, class_idx, -13)
-def load_sample_img(data_path, idx=0):
+def load_sample_img(data_path, class_label = ['angry', 'happy','neutral'], idx=0):
     
     split_label = ['train','validation','test']
-    class_label = ['angry', 'happy','neutral']
     
-    list_dir = os.listdir(data_path)
+    
+    #list_dir = os.listdir(data_path)
     
     #np.random.shuffle(list_dir)
-    path_test = os.path.join(data_path, list_dir[idx],split_label[1])
-    print('\nRandom selection\n Subject:'+list_dir[idx])
-    
+    #path_test = os.path.join(data_path, list_dir[idx],split_label[1])
+    #print('\selection\n Subject:'+list_dir[idx])
+    path_test = data_path
     samples =[]
     
-    for i, i_dir in enumerate(class_label):
+    for _, i_dir in enumerate(class_label):
         path_class = os.path.join(path_test,i_dir)
         print('\nRandom selection from:'+ path_class)
-        files = glob.glob(path_class+'/*.png')
+        files = glob.glob(path_class+'/*.*')
         np.random.shuffle(files)
     
         img = preprocess_img(files[0])
@@ -177,7 +186,6 @@ def preprocess_img(img_path):
 def load_img_save_npy(data_path):
     
     split_label = ['test','train','validation']
-    
     class_label = ['angry', 'happy','neutral']
     
     x = []
@@ -243,7 +251,7 @@ def plot_samples_from_path(data_path='/github/fer/data', class_idx=0, n = 100):
         print('Direct loading...\n')
 
         path_class = os.path.join(data_path, class_label[class_idx]) ####### 0: neutral 1: happy 2: angry
-        files = glob.glob(path_class+'/*.png')
+        files = glob.glob(path_class+'/*.*')
         np.random.shuffle(files)
     print('\n Class: {}\n'.format(class_label[class_idx]))
     
@@ -351,43 +359,27 @@ if __name__ == "__main__":
     #plot_samples_from_path(data_path, class_idx =0 , n=500) # 0 3 6
 #    ## for whole data plot
 #    data_path = '/github/fer/data'
-#    for i in range(3):
-#        plot_samples_from_path(class_idx=i)
-   
-    #x,y = load_img_save_npy(data_path)
-#            
-#    print("===============================================================")
-#    plt.close()
-#    loaded_model = load_model('./models/ak7_16.h5')    
-#    
-##    #### transfer mobiel net model
-##    model_path = 'test_mobile_model'
-##    mobile_weight_path = 'test_mobile_weight'
-##    
-###    with CustomObjectScope({'relu6': keras.layers.ReLU(6.),'DepthwiseConv2D': keras.layers.DepthwiseConv2D}):
-###        loaded_model = load_model(model_path+'.h5')  
-###    
-###    loaded_model.load_weights(mobile_weight_path+'.h5')  
-###    
-#    loaded_model.compile(loss = categorical_crossentropy,
-#              optimizer=Adam(lr = 0.001, beta_1 = 0.9, beta_2 = 0.999, epsilon = 1e-7),
-#              metrics=['accuracy'])
+
 #    
 #    total_layer = len(loaded_model.layers)
 #    print('Total Layer:{}'.format(total_layer))
 #    
 #    ####### gradCAM
-    model_path = './models/ak8.h5'
-    data_path = '../Data/'
+    model_path = '/Data/mice_processed/ak_mice.h5'
+    data_path = '/Data/mice_processed'
     loaded_model = load_model(model_path)
     n_subject = 1
-   # for j in range(n_subject):
-    samples = load_sample_img(data_path, 7)
+    samples=[]
+    #for j in range(n_subject):
+    #class_label = []
+    class_label = ['background', 'body','nose', 'tail']
+    samples = load_sample_img(data_path, class_label, 6)
 
-    n_layer = 15
+    n_layer = 16
     layer_idx = -4  # investigate layer start from ..
     color_ch = 1    # 1 for gray, 3 for model use RGB 
     print(len(samples))
+    
     for i, sample in enumerate(samples):
         
         plot_grad_cam(loaded_model, sample, pred_class=i, layer_idx = layer_idx, n_layer=n_layer, color_ch = color_ch, idx=7)
