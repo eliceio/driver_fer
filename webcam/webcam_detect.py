@@ -169,12 +169,12 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
 
         if input_img is not None:
             result = model.predict(input_img)[0]
-            http_post_array(input_img)
+            result2 = http_post_array(input_img) # for serving
             index = int(np.argmax(result))
 
             if du.repeat >= 56:
                 # serving
-                http_post() # for serving
+                #http_post() # for serving
                 
                 for i in range(len(emotion)):
                     #print("Emotion :{} / {} % ".format(emotion[i], round(result[i]*100, 2)))
