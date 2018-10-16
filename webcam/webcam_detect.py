@@ -29,6 +29,7 @@ from scipy.misc import imsave
 
 import matplotlib.animation as animation
 from matplotlib import style
+from io import StringIO
 
 clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
 
@@ -73,7 +74,8 @@ input_img = None
 rect = None
 bounding_box = None
 
-model_url = 'http://143.248.92.116:8002/model/predict_images/images'
+#model_url = 'http://143.248.92.116:8002/model/predict_images/images'
+model_url = 'http://143.248.92.116:8002/model/serving_default/input_image'
 
 import matplotlib as mpl
 from scipy import signal
@@ -167,11 +169,13 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
 
         if input_img is not None:
             result = model.predict(input_img)[0]
+            http_post_array(input_img)
             index = int(np.argmax(result))
 
             if du.repeat >= 56:
                 # serving
-                #http_post() # for serving
+                http_post() # for serving
+                
                 for i in range(len(emotion)):
                     #print("Emotion :{} / {} % ".format(emotion[i], round(result[i]*100, 2)))
                     cv2.putText(frame, "{}: {}% ".format(emotion[i], round(result[i]*100, 2)), (5, 20+(i*20)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
@@ -257,9 +261,21 @@ def detect_area_driver(frame, face_coordinates, color_ch=1):
             #print(np.mean(input_img))
     return eye_speed, ear_out, user_eye
 
+def http_post_array(data):
+    data = np.squeeze(data, axis=0)
+    data = np.squeeze(data, axis=2)
+    s = StringIO()
+    np.savetxt(s, data, delimiter=',')
+    csv_str = s.getvalue()
+    
+    rsp = requests.post(model_url, data=csv_str,
+                        headers={'Content-Type': 'text/csv'})
+    print(rsp.status_code, rsp.reason)
+    print(rsp.headers)
+    print(rsp.text)    
 
 def http_post():
-    #model_url = 'http://143.248.92.116:8002/model/predict_images/images'
+    #model_url = 'http://143.248.92.116:8002/model/serving_default/input_image'
 
     with open('./face.jpg', 'rb') as jpeg_file:
         jpeg_bytes = jpeg_file.read()
@@ -268,7 +284,6 @@ def http_post():
         print(rsp.status_code, rsp.reason)
         print(rsp.headers)
         print(rsp.text)
-
 
 def refreshScreen(frame):
     if isArea:
