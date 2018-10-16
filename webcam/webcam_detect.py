@@ -70,7 +70,7 @@ emotion_7_class = ['Angry', 'Disgust', 'Fear', 'Happy', 'Sad', 'Surprise', 'Neut
 isContinue = True
 isArea = True
 isLandmark = False
-isServing = True
+isServing = False
 isGragh = False
 camera_width = 0
 camera_height = 0
@@ -107,7 +107,7 @@ def plot_hist(emotion_hist, class_hist):
         name = 'drowsy'
         ax.set(title = 'Drowsy history', ylabel = 'eye size', xlabel = 'Time')
     elif n==3:
-        ax.set(title = 'Emotion history', ylabel = 'Prediction (%)', xlabel = 'Time')
+        ax.set(title = 'Emotion history tracking', ylabel = 'Prediction (%)', xlabel = 'Time')
         #ax = plt.axes(xlim=(0,100), ylim=(-10, 150))
         name = 'emotion'
 
@@ -141,11 +141,8 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
     emotion_hist = []
     drowsy_hist = []
 
-
     #### For live plot
-
     #plt.show()
-
     line1=[]
     line2=[]
     line3=[]
@@ -153,14 +150,13 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
 
     fig = plt.figure()
     ax = plt.axes(xlim=(0,100), ylim=(-10, 150))
-    ax.set(title = 'Emotion history', ylabel = 'Prediction (%)', xlabel = 'Time')
+    ax.set(title = 'Emotion history tracking', ylabel = 'Prediction (%)', xlabel = 'Time')
     #axes = plt.gca()
 
     for i in range(3):
-        list_line[i], = ax.plot([],[] , 'o-', label=class_emotion[i])
+        list_line[i], = ax.plot([],[] , 'o-', linewidth = 3, label=class_emotion[i])
 
     ax.legend(loc='upper right')
-
 
     ###############
 
@@ -180,7 +176,7 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
                     cv2.putText(frame, "Serving mode", (int(camera_width*0.05), int(camera_height*0.95)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
                 else:
                     result = model.predict(input_img)[0]
-                    cv2.putText(frame, "Local mode", (int(camera_width*0.05), int(camera_height*0.95)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                    cv2.putText(frame, "Local mode", (int(camera_width*0.05), int(camera_height*0.95)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (100, 100, 100), 2)
                 index = int(np.argmax(result))
 
                 for i in range(len(emotion)):
@@ -190,8 +186,9 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
                 cv2.putText(frame, "Driver emotion: {}".format(emotion[index]), (5, 20+(20*len(emotion))), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
                 du.add_driver_emotion(index)
                 du.check_driver_emotion(frame)
-
+                              
                 if isGragh:
+                    cv2.putText(frame, "Graph ON", (int(camera_width*0.7), int(camera_height*0.95)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (100,50,200), 2)
                     # History saving
                     emotion_hist.append(result)  # to track emotion history
                     eye_size = ear_out  # to prevent divide by zero
@@ -219,6 +216,8 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  #jj_add / for
 
                         # add this if you don't want l the window to disappear at the end
                         #plt.show()
+                else:
+                    cv2.putText(frame, "Graph OFF", (int(camera_width*0.7), int(camera_height*0.95)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (100,100,100), 2)
 
         refreshScreen(frame)
         key = cv2.waitKey(20)
