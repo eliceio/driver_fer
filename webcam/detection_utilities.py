@@ -47,7 +47,7 @@ def crop_face(frame, face_coordinates):
     (x, y, w, h) = face_coordinates
     if check_resize_area(face_coordinates):
         cropped_img = frame[y - int(h / 4):y + h + int(h / 4), x - int(w / 4):x + w + int(w / 4)]
-        cv2.imwrite('./face.jpg', cropped_img, params=[cv2.IMWRITE_PNG_COMPRESSION, 0])
+        #cv2.imwrite('./face.jpg', cropped_img, params=[cv2.IMWRITE_PNG_COMPRESSION, 0])
         return cropped_img
     else:
         return None
