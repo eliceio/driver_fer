@@ -286,12 +286,23 @@ def showScreenAndDetectFace(model, capture, emotion, color_ch=1):  # jj_add / fo
 def user_img_capture(img_counter):
     try:
         time_now = datetime.now().strftime('%Y%m%d_%H%M%S')
+        path1= '../data/_transfer/angry/'
+        path2= '../data/_transfer/happy/'
+        path3='../data/_transfer/neutral/'
+        
+        if not os.path.exists(path1):
+            os.makedirs(path1)
+        if not os.path.exists(path2):
+            os.makedirs(path2)
+        if not os.path.exists(path3):
+            os.makedirs(path3)
+            
         if img_counter in range(1, 11):
-            img_name = '../data/angry/' + time_now + "_cropped_gray_{}.png".format(img_counter)
+            img_name = '../data/_transfer/angry/' + time_now + "_cropped_gray_{}.png".format(img_counter)
         elif img_counter in range(11, 21):
-            img_name = '../data/happy/' + time_now + "_cropped_gray_{}.png".format(img_counter)
+            img_name = '../data/_transfer/happy/' + time_now + "_cropped_gray_{}.png".format(img_counter)
         elif img_counter in range(21, 31):
-            img_name = '../data/neutral/' + time_now + "_cropped_gray_{}.png".format(img_counter)
+            img_name = '../data/_transfer/neutral/' + time_now + "_cropped_gray_{}.png".format(img_counter)
         cv2.imwrite(img_name,
                     np.squeeze(input_img * 255.))  # to recover normalized img to save as gray scale image
         print("{} written!".format(img_name))
